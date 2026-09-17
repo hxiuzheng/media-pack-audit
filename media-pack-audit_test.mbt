@@ -12,6 +12,27 @@ test "rejects short and non-PNG data" {
 }
 
 ///|
+test "reads baseline JPEG dimensions after metadata segments" {
+  let jpeg : Bytes = b"\xFF\xD8\xFF\xE0\x00\x04\x01\x02\xFF\xC0\x00\x11\x08\x00\x03\x00\x04\x03\x01\x11\x00\x02\x11\x01\x03\x11\x01"
+  assert_true(jpeg_dimensions(jpeg) == Some((4, 3)))
+}
+
+///|
+test "reads progressive JPEG dimensions with fill bytes" {
+  let jpeg : Bytes = b"\xFF\xD8\xFF\xFF\xC2\x00\x0B\x08\x00\x09\x00\x10\x01\x01\x11\x00"
+  assert_true(jpeg_dimensions(jpeg) == Some((16, 9)))
+}
+
+///|
+test "rejects malformed JPEG markers and frame lengths" {
+  assert_true(jpeg_dimensions(b"not a JPEG") is None)
+  let truncated : Bytes = b"\xFF\xD8\xFF\xC0\x00\x11\x08\x00\x03\x00\x04"
+  assert_true(jpeg_dimensions(truncated) is None)
+  let malformed_length : Bytes = b"\xFF\xD8\xFF\xC0\x00\x07\x08\x00\x03\x00\x04\x01"
+  assert_true(jpeg_dimensions(malformed_length) is None)
+}
+
+///|
 test "escapes HTML special characters" {
   assert_true(html_escape("<&>\"'") == "&lt;&amp;&gt;&quot;&#39;")
 }

@@ -22,10 +22,13 @@ async fn main {
   }
   let clean_json = @fs.read_file("_build/cli-smoke/clean/report.json").text()
   let clean_html = @fs.read_file("_build/cli-smoke/clean/report.html").text()
-  if !clean_json.contains("\"failed\": 0") ||
+  if !clean_json.contains("\"passed\": 2") ||
+    !clean_json.contains("\"failed\": 0") ||
+    !clean_json.contains("cover.jpeg") ||
+    !clean_json.contains("1200 × 630") ||
     !clean_html.contains("片盒点检") {
     raise Failure::Failure(
-      "clean sample reports do not contain the expected result",
+      "clean PNG/JPEG sample reports do not contain both expected assets",
     )
   }
 
@@ -35,7 +38,7 @@ async fn main {
   ]).output()
   if findings.exit_code() != 1 {
     raise Failure::Failure(
-      "sample with missing and extra files should return 1, got \{findings.exit_code()}\n\{findings.stdout()}\n\{findings.stderr()}",
+      "sample with missing and extra images should return 1, got \{findings.exit_code()}\n\{findings.stdout()}\n\{findings.stderr()}",
     )
   }
   if !@fs.exists("_build/cli-smoke/findings/report.json") ||
@@ -43,8 +46,11 @@ async fn main {
     raise Failure::Failure("finding sample did not preserve both reports")
   }
   let findings_json = @fs.read_file("_build/cli-smoke/findings/report.json").text()
-  if !findings_json.contains("\"failed\": 2") {
-    raise Failure::Failure("finding sample report should contain two findings")
+  if !findings_json.contains("\"failed\": 3") ||
+    !findings_json.contains("cover.JPG") {
+    raise Failure::Failure(
+      "finding sample should report the missing JPEG fixture and both extra image files",
+    )
   }
 
   let case_mismatch = @shell.Cmd("moon", [

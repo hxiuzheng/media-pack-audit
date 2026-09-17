@@ -42,3 +42,13 @@ moon run --target native scripts/cli_smoke.mbtx
 - README 加入申报材料入口，避免把“仓库已公开”误写成“已报名或通过审核”。
 
 本轮为材料整理，没有新增代码功能。Windows 本机重跑 `moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（3 passed）和 CLI smoke 均通过；另外直接运行全通过与发现问题两个 README 演示，分别得到预期退出码 `0` 和 `1`，并生成 HTML / JSON 文件。后续优先取得一名数字媒体同学的真实试用反馈，再据此扩充高价值功能。
+
+## 2026-09-17：增加 JPEG 素材规格预检
+
+- 扩展名支持 `.png`、`.jpg`、`.jpeg`，扩展名比较不区分大小写；完整文件名仍按目录中的实际拼写精确匹配。
+- 新增 JPEG marker / SOF 尺寸读取，支持常见 baseline、progressive 等 SOF 类型；JPEG 元数据最多扫描文件开头 4 MiB，不解码整张图。
+- 将干净样例扩展为 PNG + 1200×630 JPEG，并在问题样例中加入大写扩展名 `.JPG`，覆盖真实格式识别和大小写行为。
+- 新增 JPEG baseline、progressive、损坏 marker / frame length 单元测试；README、项目简介与初审清单同步说明支持范围和边界。
+- 本轮由 Codex 辅助实现；JPEG 样例由 Pillow 生成且可正常解码。工具只读取尺寸元数据，不验证像素内容、完整解码或 ICC / 色彩配置；参赛者仍需理解并负责最终实现。
+
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（6 passed）与 `moon run --target native scripts/cli_smoke.mbtx`；Pillow 确认 `.jpeg` 与 `.JPG` 样例均为 1200×630 JPEG。远端 CI 待推送后验证。

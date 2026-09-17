@@ -8,6 +8,8 @@ import {
 // Values
 pub fn html_escape(String) -> String
 
+pub fn jpeg_dimensions(Bytes) -> (Int, Int)?
+
 pub fn png_dimensions(Bytes) -> (Int, Int)?
 
 pub fn render_html(AuditReport) -> String
