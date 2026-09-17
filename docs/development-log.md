@@ -88,3 +88,12 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 本轮 Codex 辅助实现，测试夹具为合成数据；没有外部用户试用或新增用户反馈记录。
 
 Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（12 passed）和 `moon run --target native scripts/cli_smoke.mbtx`。提交 `31b8a61` 的 [GitHub Actions 运行 #35213038689](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213038689) 中 Ubuntu 与 Windows job 均成功。
+
+## 2026-09-17：按 PNG 规范校验 IHDR 字段
+
+- 在 CRC 校验之外，补上位深与颜色类型的合法组合、压缩方法、过滤方法和交错方法校验，避免 CRC 正确但头字段无效的 PNG 被判为可用。
+- 参考 [W3C PNG 规范](https://www.w3.org/TR/png-3/)的 IHDR 定义；增加合法/非法字段组合单测，以及“非法位深但 CRC 正确”的 PNG 与损坏 CRC 样例端到端 CLI 回归。
+- 将 smoke 临时目录改为可重复运行；本机连续运行两次均通过。
+- 本轮使用 Codex 辅助实现与核对规范；新增样例均为合成数据，没有外部用户试用或反馈。
+
+本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 14 passed。提交 `af093bd` 的 [GitHub Actions 运行 #35213747460](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213747460) 中 Ubuntu job 已成功；记录本条时 Windows job 仍在运行，结果待复核。

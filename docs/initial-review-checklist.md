@@ -11,7 +11,7 @@
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/demo` | 已满足；本机按命令演示 |
 | 必要测试 | PNG/JPEG/GIF 尺寸头测试；PNG CRC 标准向量、IHDR 合法字段组合及损坏头拒绝测试；CLI smoke 覆盖递归、路径越界、通过/失败报告、大小写不一致、无效/缺失/类型错误输入及输出路径冲突 | 已覆盖当前功能范围；继续按新增行为补测 |
-| 跨平台 CI | [GitHub Actions 运行 #35213038689](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213038689)：PNG IHDR CRC 改动后的 Ubuntu、Windows job 均成功 | 已满足 |
+| 跨平台 CI | [GitHub Actions 运行 #35213747460](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213747460)：PNG IHDR 字段改动后的 Ubuntu job 成功；Windows job 尚在运行，待完成后复核 | 部分完成 |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
 | AI 辅助透明且成果可解释 | README 与开发记录明确披露 Codex 辅助 | 文档已披露；参赛者本人仍须理解并能讲解代码 |
