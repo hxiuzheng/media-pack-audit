@@ -76,6 +76,8 @@ Start-Process .\report\report.html
 
 本项目刻意把范围控制在可解释、可演示、可测试的一条链路：清单输入 → 文件点检 → HTML/JSON 交付报告。后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。是否与其他参赛者方向重叠，需要向活动组织者确认；提交项目前建议先发项目简介征求选题确认。
 
+参赛项目简介和初审准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。项目代码公开不代表已完成赛事报名或资格审核。
+
 ## AI 协作说明
 
 开发过程中使用 Codex 辅助代码实现、MoonBit API 查询、测试和文档整理。参赛者需要逐项复核改动、理解实现并对最终提交负责；尚未理解的代码应先验证和学习，再作为参赛成果进行说明。
