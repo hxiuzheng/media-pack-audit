@@ -2,6 +2,14 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-09-17：拒绝重复 JSON 清单字段
+
+- 复现发现，同一素材对象重复声明 `width` 时，JSON 映射解析会静默保留其中一个值，导致清单含糊却仍可能通过检查。
+- CLI 现在在 JSON 映射解码前扫描原文，按解码后的键名检查每个对象；例如 `width` 与转义写法 `\u0077idth` 会识别为同一字段，并在扫描素材、生成报告前报错。
+- 新增重复宽度字段 fixture 与端到端 smoke，确认返回非零且不会写报告；同步更新 README 与初审核验项。
+- Windows 本机格式检查、`moon info`、`moon check --target native --deny-warn`、20 项原生测试和 CLI smoke 均通过。提交 `b08ea24` 的 [GitHub Actions 运行 #35237939030](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35237939030) 中 Ubuntu 和 Windows jobs 均成功。Windows 原生测试构建输出含依赖库 C 源 `EINVAL` 宏重定义 warning；MoonBit 无警告检查成功，测试通过。
+- 此回归仍使用合成清单；真实素材用户试用和外部反馈仍待完成。
+
 ## 2026-09-17：在交付报告中显示素材用途标签
 
 - 素材清单支持可选 `label`，用于填写“课程主视觉”“社媒封面”等对交付方有意义的用途名称。
