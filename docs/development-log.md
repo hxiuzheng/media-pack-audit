@@ -7,7 +7,7 @@
 - JSON、HTML 报告和 CLI 摘要现在显示清单原始字节的 SHA-256；归档报告可以用该指纹对应回当时使用的规格文件，空格或换行变化也会产生不同指纹。
 - 增加 SHA-256 标准向量单测；端到端 smoke 在运行时读取 `examples/clean/media-pack.json` 的原始字节，核对 JSON、HTML 和 CLI 三处输出，并兼容 Windows 与 Unix 的换行差异。
 - 同步 README、项目简介和初审测试清单；明确指纹只是内容标识，不是来源认证或数字签名。
-- 本机 Windows 验证：`moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（20 passed）和 CLI smoke 全部通过。首次远端验证发现写死摘要无法适应平台换行差异，因此改为读取当前 checkout 的原始字节动态核对；更新后的跨平台 CI 待验证。C 运行时依赖仍输出 `EINVAL` 宏重定义 warning；MoonBit 检查无警告且命令成功。
+- 本机 Windows 验证：`moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（20 passed）和 CLI smoke 全部通过。首次远端验证发现写死摘要无法适应平台换行差异，因此改为读取当前 checkout 的原始字节动态核对。提交 `d4f280f` 的 [GitHub Actions 运行 #35232545392](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35232545392) 中 Ubuntu、Windows jobs 均通过格式、无警告检查、20 项原生测试及 CLI smoke。C 运行时依赖仍输出 `EINVAL` 宏重定义 warning；MoonBit 检查无警告且命令成功。
 - 新增回归使用仓库合成清单；尚未进行真实素材用户试用，也没有外部反馈。
 
 ## 2026-09-17：CLI 退出码、目录复用与端到端验证
