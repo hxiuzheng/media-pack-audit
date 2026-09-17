@@ -22,13 +22,14 @@ async fn main {
   }
   let clean_json = @fs.read_file("_build/cli-smoke/clean/report.json").text()
   let clean_html = @fs.read_file("_build/cli-smoke/clean/report.html").text()
-  if !clean_json.contains("\"passed\": 2") ||
+  if !clean_json.contains("\"passed\": 3") ||
     !clean_json.contains("\"failed\": 0") ||
     !clean_json.contains("social/cover.jpeg") ||
+    !clean_json.contains("motion/preview.gif") ||
     !clean_json.contains("1200 × 630") ||
     !clean_html.contains("片盒点检") {
     raise Failure::Failure(
-      "clean PNG/JPEG sample reports do not contain both expected assets",
+      "clean PNG/JPEG/GIF sample reports do not contain all expected assets",
     )
   }
 
@@ -46,10 +47,11 @@ async fn main {
     raise Failure::Failure("finding sample did not preserve both reports")
   }
   let findings_json = @fs.read_file("_build/cli-smoke/findings/report.json").text()
-  if !findings_json.contains("\"failed\": 3") ||
-    !findings_json.contains("exports/cover.JPG") {
+  if !findings_json.contains("\"failed\": 4") ||
+    !findings_json.contains("exports/cover.JPG") ||
+    !findings_json.contains("exports/preview.GIF") {
     raise Failure::Failure(
-      "finding sample should report the missing nested image and both extra image paths",
+      "finding sample should report the missing image and three extra image paths",
     )
   }
 

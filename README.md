@@ -1,6 +1,6 @@
 # 片盒点检 · MediaPack Audit
 
-**面向数字媒体素材交付的轻量级预检 CLI。** 它读取一份 JSON 清单，检查交付目录中的 PNG/JPEG 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。
+**面向数字媒体素材交付的轻量级预检 CLI。** 它读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/GIF 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。
 
 > MoonBit Lang Hackathon 2026 项目方向：用 MoonBit 构建一个可复现的数字媒体工作流小工具。核心聚焦在“素材包验收”，不做图像编辑器、素材生成器或通用文件管理器。
 
@@ -11,13 +11,13 @@
 ## 能做什么
 
 - 按清单递归检查素材目录中的相对路径是否存在、是否为普通文件；额外图片也会报告其相对路径。
-- 读取 PNG IHDR 与 JPEG SOF 文件头核对像素宽高；不解码整张图片。
-- 检查文件大小上限，并报告目录中的额外 PNG/JPEG。
+- 读取 PNG IHDR、JPEG SOF 与 GIF 逻辑屏幕尺寸核对像素宽高；不解码图像。
+- 检查文件大小上限，并报告目录中的额外 PNG/JPEG/GIF。
 - 检查清单中的重复文件名、不安全路径和无效规格。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
-当前版本递归检查素材目录中的 PNG 和 JPEG；扩展名接受 `.png`、`.jpg`、`.jpeg`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR 或 JPEG SOF；JPEG 元数据扫描最多读取文件开头 4 MiB。工具不会解码像素、不验证 PNG 整文件 CRC，也不检查色彩配置、透明边缘或视觉内容。它用于交付预检，不替代完整图像解码器和人工视觉验收。
+当前版本递归检查素材目录中的 PNG、JPEG 和 GIF；扩展名接受 `.png`、`.jpg`、`.jpeg`、`.gif`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF 或 GIF 逻辑屏幕描述符；JPEG 元数据扫描最多读取文件开头 4 MiB。GIF 只检查画布宽高，不读取帧数或动画时序。工具不会解码像素、不验证 PNG 整文件 CRC，也不检查色彩配置、透明边缘或视觉内容。它用于交付预检，不替代完整图像解码器和人工视觉验收。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
 
 ## 快速开始
 
@@ -31,7 +31,7 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 
 命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。通过时退出码为 `0`；清单、目录有问题或检测发现未通过项时返回非零，适合接入 CI。检查发现不合格素材时仍会先保存两种报告。
 
-仓库还附带一个刻意有问题的样例：它缺少 `social/card.png`，并多出未登记的 `texture.png` 与嵌套路径 `exports/cover.JPG`。运行后会生成报告并以退出码 `1` 结束，这是预期行为：
+仓库还附带一个刻意有问题的样例：它缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG` 和 `exports/preview.GIF`。运行后会生成报告并以退出码 `1` 结束，这是预期行为：
 
 ```sh
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
@@ -56,6 +56,7 @@ Start-Process .\report\report.html
   "assets": [
     { "file": "poster.png", "width": 1920, "height": 1080, "max_bytes": 5000000 },
     { "file": "social/cover.jpeg", "width": 1200, "height": 630, "max_bytes": 2000000 },
+    { "file": "motion/preview.gif", "width": 320, "height": 180, "max_bytes": 500000 },
     { "file": "social-card.png", "width": 1200, "height": 630, "max_bytes": 2000000 }
   ]
 }
@@ -65,7 +66,7 @@ Start-Process .\report\report.html
 
 ## 项目结构
 
-- `image.mbt`：清单类型、PNG/JPEG 头解析与素材点检逻辑。
+- `image.mbt`：清单类型、PNG/JPEG/GIF 尺寸解析与素材点检逻辑。
 - `report.mbt`：HTML 报告及文本转义。
 - `cmd/main`：命令行入口与报告落盘。
 - `examples/demo`：可以直接运行的最小示例素材包。
@@ -85,4 +86,4 @@ Start-Process .\report\report.html
 
 ## License
 
-Apache-2.0，详见 [LICENSE](LICENSE)。
+项目代码采用 Apache-2.0，详见 [LICENSE](LICENSE)。GIF 是 CompuServe Incorporated 的服务标记；尺寸字段按 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)读取。

@@ -33,6 +33,22 @@ test "rejects malformed JPEG markers and frame lengths" {
 }
 
 ///|
+test "reads GIF87a and GIF89a logical screen dimensions" {
+  let gif87a : Bytes = b"GIF87a\x04\x00\x03\x00\x00\x00\x00"
+  let gif89a : Bytes = b"GIF89a\x10\x00\x09\x00\x00\x00\x00"
+  assert_true(gif_dimensions(gif87a) == Some((4, 3)))
+  assert_true(gif_dimensions(gif89a) == Some((16, 9)))
+}
+
+///|
+test "rejects malformed and zero-sized GIF headers" {
+  assert_true(gif_dimensions(b"not a GIF") is None)
+  assert_true(gif_dimensions(b"GIF90a\x04\x00\x03\x00\x00\x00\x00") is None)
+  assert_true(gif_dimensions(b"GIF87a\x00\x00\x03\x00\x00\x00\x00") is None)
+  assert_true(gif_dimensions(b"GIF87a\x04\x00\x03") is None)
+}
+
+///|
 test "escapes HTML special characters" {
   assert_true(html_escape("<&>\"'") == "&lt;&amp;&gt;&quot;&#39;")
 }

@@ -62,3 +62,12 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 本轮由 Codex 辅助实现，fixture 仍是合成文件；尚无真实用户试用或组织方选题确认记录。
 
 Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native` 和默认 `moon test`（均 8 passed）、CLI smoke，以及 README 通过/失败演示（退出码分别为 `0` / `1`）。功能提交 `241f1d1` 的 [GitHub Actions 运行 #35210585186](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35210585186) 中 Ubuntu 与 Windows job 均通过。
+
+## 2026-09-17：增加 GIF 画布尺寸预检
+
+- 扩展名新增 `.gif`（大小写不敏感）；从 GIF87a / GIF89a 头读取逻辑屏幕宽高，并纳入文件大小、清单尺寸和额外图片检查。
+- 新增两个版本的尺寸解析及损坏、零宽和短头测试；干净样例加入 320×180 两帧 GIF，失败样例加入大写 `.GIF` 多余文件。
+- 明确工具只读 GIF 画布尺寸，不解码帧像素、不核验帧数或播放时序；字段依据 [W3C 发布的 GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。README 同时记录 CompuServe 服务标记。
+- 本轮由 Codex 辅助实现，GIF fixture 是合成素材；没有外部用户反馈，不能据此声称完成真实用户试用。
+
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native` 和默认 `moon test`（均 10 passed）、CLI smoke，以及直接 GIF 演示（清单 GIF 320×180 通过、大写 `.GIF` 额外素材被发现）。远端 CI 待推送后验证。

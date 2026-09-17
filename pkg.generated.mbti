@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn gif_dimensions(Bytes) -> (Int, Int)?
+
 pub fn html_escape(String) -> String
 
 pub fn jpeg_dimensions(Bytes) -> (Int, Int)?

@@ -116,7 +116,7 @@ pub fn render_html(report : AuditReport) -> String {
   output <+
     #|  </table></div>
   output <+
-    #|  <footer>片盒点检只读取 PNG/JPEG 文件头和清单信息，不会修改素材文件。</footer>
+    #|  <footer>片盒点检只读取 PNG/JPEG/GIF 尺寸头和清单信息，不会修改素材文件。</footer>
   output <+
     #|</main></body></html>
   output.to_string()

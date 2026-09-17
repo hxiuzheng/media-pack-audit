@@ -116,8 +116,31 @@ pub fn jpeg_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
+/// Return the GIF87a/GIF89a logical screen dimensions without decoding image data.
+pub fn gif_dimensions(bytes : Bytes) -> (Int, Int)? {
+  if bytes.length() < 13 {
+    return None
+  }
+  if !bytes.has_prefix(b"GIF87a") && !bytes.has_prefix(b"GIF89a") {
+    return None
+  }
+  let width = read_little_endian_u16(bytes, 6)
+  let height = read_little_endian_u16(bytes, 8)
+  if width > 0 && height > 0 {
+    Some((width, height))
+  } else {
+    None
+  }
+}
+
+///|
 fn read_big_endian_u16(bytes : Bytes, offset : Int) -> Int {
   bytes[offset].to_int() * 256 + bytes[offset + 1].to_int()
+}
+
+///|
+fn read_little_endian_u16(bytes : Bytes, offset : Int) -> Int {
+  bytes[offset].to_int() + bytes[offset + 1].to_int() * 256
 }
 
 ///|
@@ -199,9 +222,21 @@ async fn read_jpeg_dimensions(path : String, size : Int64) -> (Int, Int)? {
 }
 
 ///|
+async fn read_gif_dimensions(path : String, size : Int64) -> (Int, Int)? {
+  if size < 13L {
+    return None
+  }
+  let file = @fs.open(path, mode=@fs.ReadOnly)
+  defer file.close()
+  let header = file.read_exactly(13)
+  gif_dimensions(header)
+}
+
+///|
 priv enum RasterFormat {
   Png
   Jpeg
+  Gif
 }
 
 ///|
@@ -211,6 +246,8 @@ fn raster_format(name : String) -> RasterFormat? {
     Some(RasterFormat::Png)
   } else if lower_name.has_suffix(".jpg") || lower_name.has_suffix(".jpeg") {
     Some(RasterFormat::Jpeg)
+  } else if lower_name.has_suffix(".gif") {
+    Some(RasterFormat::Gif)
   } else {
     None
   }
@@ -277,7 +314,7 @@ pub async fn scan_assets(
           file: spec.file,
           status: "FAIL",
           observed: "不支持的格式",
-          details: "当前版本只检查 PNG 和 JPEG 图片",
+          details: "当前版本只检查 PNG、JPEG 和 GIF 图片",
         })
         continue
       }
@@ -312,6 +349,7 @@ pub async fn scan_assets(
     let dimensions = match format {
       RasterFormat::Png => read_png_dimensions(path, size)
       RasterFormat::Jpeg => read_jpeg_dimensions(path, size)
+      RasterFormat::Gif => read_gif_dimensions(path, size)
     }
     let observed = match dimensions {
       Some((width, height)) => "\{width} × \{height}，\{size} bytes"
@@ -321,6 +359,8 @@ pub async fn scan_assets(
             RasterFormat::Png => "PNG 文件头无效或不完整"
             RasterFormat::Jpeg =>
               "JPEG 文件头无效、不完整或 SOF 超出 4 MiB 扫描范围"
+            RasterFormat::Gif =>
+              "GIF 文件头无效、不完整或尺寸为零"
           },
         )
         "\{size} bytes"
