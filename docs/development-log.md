@@ -61,4 +61,4 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - README 和演示命令明确使用 `native` 目标；项目依赖的文件系统打开/类型查询 API 当前不支持 Wasm / JS 组合目标，因此没有宣称多后端支持。
 - 本轮由 Codex 辅助实现，fixture 仍是合成文件；尚无真实用户试用或组织方选题确认记录。
 
-Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native` 和默认 `moon test`（均 8 passed）、CLI smoke，以及 README 通过/失败演示（退出码分别为 `0` / `1`）。推送后待跑 Ubuntu / Windows CI。
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native` 和默认 `moon test`（均 8 passed）、CLI smoke，以及 README 通过/失败演示（退出码分别为 `0` / `1`）。功能提交 `241f1d1` 的 [GitHub Actions 运行 #35210585186](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35210585186) 中 Ubuntu 与 Windows job 均通过。
