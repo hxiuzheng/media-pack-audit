@@ -113,4 +113,4 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 新增 1×1 PNG 样例使用有效 chunk CRC，便于单独验证 IEND 缺失与尾随数据边界；不把 IDAT 解压或像素正确性纳入当前承诺。
 - 同步更新 README、项目简介和初审清单，列明新增回归覆盖。没有新增生产代码或真实用户试用记录。
 
-Windows 本机 `moon fmt`、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（14 passed）及 `moon run --target native scripts/cli_smoke.mbtx` 均通过；格式检查通过，CLI smoke 连续运行两次均成功。包含本轮新增样例的 GitHub Actions 待推送后复核。
+Windows 本机 `moon fmt`、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（14 passed）及 `moon run --target native scripts/cli_smoke.mbtx` 均通过；格式检查通过，CLI smoke 连续运行两次均成功。提交 `31032ae` 的 [GitHub Actions 运行 #35216322259](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35216322259) 中 Ubuntu 和 Windows jobs 均通过。
