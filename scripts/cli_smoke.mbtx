@@ -111,6 +111,33 @@ async fn main {
     )
   }
 
+  let manifest_directory = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "examples/clean/assets", "examples/clean/assets",
+    "--output", "_build/cli-smoke/manifest-directory",
+  ]).output()
+  let manifest_directory_output = manifest_directory.stdout() +
+    manifest_directory.stderr()
+  if manifest_directory.exit_code() != 1 ||
+    !manifest_directory_output.contains(
+      "素材清单路径必须是普通文件",
+    ) {
+    raise Failure::Failure(
+      "directory used as a manifest should get a clear error",
+    )
+  }
+
+  let assets_file = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "examples/clean/media-pack.json",
+    "README.md", "--output", "_build/cli-smoke/assets-file",
+  ]).output()
+  let assets_file_output = assets_file.stdout() + assets_file.stderr()
+  if assets_file.exit_code() != 1 ||
+    !assets_file_output.contains("素材目录路径必须是目录") {
+    raise Failure::Failure(
+      "file used as an assets directory should get a clear error",
+    )
+  }
+
   @fs.write_file("_build/cli-smoke/output-file", "occupied")
   let output_file = @shell.Cmd("moon", [
     "run", "--target", "native", "cmd/main", "--", "examples/clean/media-pack.json",
@@ -123,6 +150,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, findings=1, case mismatch=1, invalid/missing/traversal manifest=1, output path conflict=1",
+    "CLI smoke passed: clean=0, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }

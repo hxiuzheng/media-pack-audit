@@ -71,3 +71,11 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 本轮由 Codex 辅助实现，GIF fixture 是合成素材；没有外部用户反馈，不能据此声称完成真实用户试用。
 
 Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native` 和默认 `moon test`（均 10 passed）、CLI smoke，以及直接 GIF 演示（清单 GIF 320×180 通过、大写 `.GIF` 额外素材被发现）。功能提交 `c35158b` 的 [GitHub Actions 运行 #35211397433](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35211397433) 中 Ubuntu 与 Windows job 均通过。
+
+## 2026-09-17：为错误类型的 CLI 输入提供清楚提示
+
+- CLI 在读取清单和扫描目录前，先验证清单是普通文件、素材输入是目录；误传目录或文件时返回具体中文提示，不进入底层 JSON 读取或目录遍历。
+- 新增两个端到端错误输入场景，分别把目录作为清单、把文件作为素材目录，断言退出码与用户提示。
+- 本轮由 Codex 辅助实现；没有改变素材点检范围，也没有外部用户试用记录。
+
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（10 passed）和 CLI smoke。远端 CI 待推送后验证。

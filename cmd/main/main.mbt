@@ -35,8 +35,16 @@ async fn main {
   if !@fs.exists(manifest_path) {
     raise Failure::Failure("找不到素材清单：\{manifest_path}")
   }
+  if @fs.kind(manifest_path) != @fs.FileKind::Regular {
+    raise Failure::Failure(
+      "素材清单路径必须是普通文件：\{manifest_path}",
+    )
+  }
   if !@fs.exists(assets_dir) {
     raise Failure::Failure("找不到素材目录：\{assets_dir}")
+  }
+  if @fs.kind(assets_dir) != @fs.FileKind::Directory {
+    raise Failure::Failure("素材目录路径必须是目录：\{assets_dir}")
   }
 
   let manifest_text = @fs.read_file(manifest_path).text()

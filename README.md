@@ -29,7 +29,7 @@ moon test
 moon run --target native cmd/main -- examples/clean/media-pack.json examples/clean/assets --output report
 ```
 
-命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。通过时退出码为 `0`；清单、目录有问题或检测发现未通过项时返回非零，适合接入 CI。检查发现不合格素材时仍会先保存两种报告。
+命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。CLI 会先确认清单是文件、素材输入是目录；输入路径或清单有问题时给出错误并以非零状态退出。点检完成后，通过时退出码为 `0`；发现素材不合格时仍会先保存两种报告，再返回非零状态，适合接入 CI。
 
 仓库还附带一个刻意有问题的样例：它缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG` 和 `exports/preview.GIF`。运行后会生成报告并以退出码 `1` 结束，这是预期行为：
 
@@ -37,7 +37,7 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过、递归发现、路径越界拒绝、大小写不匹配、无效/缺失清单、输出路径冲突）：
+运行 CLI 端到端回归（通过、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx
