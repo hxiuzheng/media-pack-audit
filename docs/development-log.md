@@ -124,3 +124,11 @@ Windows 本机 `moon fmt`、`moon info`、`moon check --target native --deny-war
 - 本轮由 Codex 辅助实现；示例仍为合成 fixture，没有外部用户试用或反馈。
 
 本机 `moon update`、`moon fmt` / `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 连续运行两次均成功，覆盖 JSON/HTML 指纹、70,000 字节多块哈希、超限跳过及此前 PNG 结构边界。提交 `6db5ea7` 的 [GitHub Actions 运行 #35218263425](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35218263425) 中 Ubuntu 与 Windows jobs 均成功。
+
+## 2026-09-17：在规格错误报告中展示期望值
+
+- 修正尺寸和文件大小失败提示过于笼统的问题：JSON、HTML 与 CLI 输出现在会同时列出清单要求值和检测到的值，用户不必切回清单文件才能确定修正方向。
+- CLI smoke 使用干净 PNG 构造一个宽高和大小上限均错误的清单，并断言两类报告都包含期望尺寸、实际尺寸及大小上限。
+- 本轮由 Codex 辅助实现和测试；回归 fixture 仍是合成数据，没有真实用户试用记录。
+
+Windows 本机 `moon fmt`、`.mbtx` 格式化、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 通过（含错误规格说明断言）。跨平台 CI 将在推送后复核。

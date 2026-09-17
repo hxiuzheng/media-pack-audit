@@ -42,6 +42,46 @@ async fn main {
     raise Failure::Failure("HTML report should expose the SHA-256 fingerprint")
   }
 
+  let mismatch_dir = "_build/cli-smoke/spec-mismatch"
+  if !@fs.exists(mismatch_dir) {
+    @fs.mkdir(mismatch_dir, recursive=true)
+  }
+  @fs.write_file(
+    "\{mismatch_dir}/media-pack.json",
+    "{\"assets\":[{\"file\":\"poster.png\",\"width\":5,\"height\":9,\"max_bytes\":1}]}",
+  )
+  let mismatch = @shell.Cmd("moon", [
+    "run",
+    "--target",
+    "native",
+    "cmd/main",
+    "--",
+    "\{mismatch_dir}/media-pack.json",
+    "examples/clean/assets",
+    "--output",
+    "\{mismatch_dir}/report",
+  ]).output()
+  if mismatch.exit_code() != 1 {
+    raise Failure::Failure(
+      "a wrong-size, over-limit asset should fail, got \{mismatch.exit_code()}",
+    )
+  }
+  let mismatch_json = @fs.read_file("\{mismatch_dir}/report/report.json").text()
+  let mismatch_html = @fs.read_file("\{mismatch_dir}/report/report.html").text()
+  if !mismatch_json.contains(
+      "尺寸不匹配（清单要求 5 × 9，实际 4 × 3）",
+    ) ||
+    !mismatch_json.contains("超出上限 1 bytes") ||
+    !mismatch_html.contains("清单要求 5 × 9") ||
+    !mismatch_html.contains("超出上限 1 bytes") ||
+    !mismatch.stdout().contains("清单要求 5 × 9") ||
+    !mismatch.stdout().contains("实际 4 × 3") ||
+    !mismatch.stdout().contains("超出上限 1 bytes") {
+    raise Failure::Failure(
+      "mismatch reports should show expected and observed dimensions and byte limit",
+    )
+  }
+
   let corrupt_png_dir = "_build/cli-smoke/png-crc"
   if !@fs.exists("\{corrupt_png_dir}/assets") {
     @fs.mkdir("\{corrupt_png_dir}/assets", recursive=true)

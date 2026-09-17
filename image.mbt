@@ -591,7 +591,7 @@ pub async fn scan_assets(
     let issues : Array[String] = []
     let max_bytes = Int::to_int64(spec.max_bytes)
     if size > max_bytes {
-      issues.push("文件大小超过 max_bytes")
+      issues.push("文件大小 \{size} bytes 超出上限 \{max_bytes} bytes")
     }
     let digest = if size <= max_bytes {
       sha256_file(path, size) catch {
@@ -632,7 +632,9 @@ pub async fn scan_assets(
     }
     match dimensions {
       Some((width, height)) if width != spec.width || height != spec.height =>
-        issues.push("实际尺寸与清单不一致")
+        issues.push(
+          "尺寸不匹配（清单要求 \{spec.width} × \{spec.height}，实际 \{width} × \{height}）",
+        )
       _ => ()
     }
     let status = if issues.is_empty() { "PASS" } else { "FAIL" }

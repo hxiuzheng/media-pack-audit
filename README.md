@@ -13,6 +13,7 @@
 - 按清单递归检查素材目录中的相对路径是否存在、是否为普通文件；额外图片也会报告其相对路径。
 - 读取 PNG IHDR、JPEG SOF 与 GIF 逻辑屏幕尺寸核对像素宽高；PNG 会校验 IHDR 字段、逐块 CRC 和基本容器结构；不解码图像。
 - 检查文件大小上限，并报告目录中的额外 PNG/JPEG/GIF。
+- 当尺寸或文件大小不符合清单时，报告会同时写出要求值和实际值，方便直接定位该改哪项素材。
 - 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/GIF 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。超过清单大小上限的文件会跳过哈希；PNG 的结构与 CRC 检查仍会扫描完整文件。
 - 检查清单中的重复文件名、不安全路径和无效规格。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
@@ -38,7 +39,7 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过并核对 SHA-256、跨 64 KiB 的哈希分块、超限时跳过哈希、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
+运行 CLI 端到端回归（通过并核对 SHA-256、跨 64 KiB 的哈希分块、超限时跳过哈希、尺寸与文件大小错误同时显示要求值和实际值、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx
