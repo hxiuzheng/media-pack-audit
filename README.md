@@ -10,34 +10,34 @@
 
 ## 能做什么
 
-- 按清单逐项检查文件是否存在、是否为普通文件。
+- 按清单递归检查素材目录中的相对路径是否存在、是否为普通文件；额外图片也会报告其相对路径。
 - 读取 PNG IHDR 与 JPEG SOF 文件头核对像素宽高；不解码整张图片。
 - 检查文件大小上限，并报告目录中的额外 PNG/JPEG。
 - 检查清单中的重复文件名、不安全路径和无效规格。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
-当前版本检查**单层目录中的 PNG 和 JPEG**；扩展名接受 `.png`、`.jpg`、`.jpeg`，扩展名大小写不敏感，但清单文件名必须与目录项精确匹配（包括大小写）。尺寸来自 PNG IHDR 或 JPEG SOF；JPEG 元数据扫描最多读取文件开头 4 MiB。工具不会解码像素、不验证 PNG 整文件 CRC，也不检查色彩配置、透明边缘、视觉内容或子目录。它用于交付预检，不替代完整图像解码器和人工视觉验收。
+当前版本递归检查素材目录中的 PNG 和 JPEG；扩展名接受 `.png`、`.jpg`、`.jpeg`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR 或 JPEG SOF；JPEG 元数据扫描最多读取文件开头 4 MiB。工具不会解码像素、不验证 PNG 整文件 CRC，也不检查色彩配置、透明边缘或视觉内容。它用于交付预检，不替代完整图像解码器和人工视觉验收。
 
 ## 快速开始
 
-需要已安装 [MoonBit 工具链](https://www.moonbitlang.com/download/) 与可联网下载项目依赖的环境。在仓库根目录运行：
+需要已安装 [MoonBit 工具链](https://www.moonbitlang.com/download/) 与可联网下载项目依赖的环境。本 CLI 使用主机文件系统，当前运行目标为 `native`（仓库已将其设为默认目标）。在仓库根目录运行：
 
 ```sh
 moon check --target native
 moon test
-moon run cmd/main -- examples/clean/media-pack.json examples/clean/assets --output report
+moon run --target native cmd/main -- examples/clean/media-pack.json examples/clean/assets --output report
 ```
 
 命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。通过时退出码为 `0`；清单、目录有问题或检测发现未通过项时返回非零，适合接入 CI。检查发现不合格素材时仍会先保存两种报告。
 
-仓库还附带一个刻意有问题的样例：它缺少 `social-card.png`，并多出未登记的 `texture.png` 与 `cover.JPG`。运行后会生成报告并以退出码 `1` 结束，这是预期行为：
+仓库还附带一个刻意有问题的样例：它缺少 `social/card.png`，并多出未登记的 `texture.png` 与嵌套路径 `exports/cover.JPG`。运行后会生成报告并以退出码 `1` 结束，这是预期行为：
 
 ```sh
-moon run cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
+moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过、检测失败、大小写不匹配、无效/缺失清单、输出路径冲突）：
+运行 CLI 端到端回归（通过、递归发现、路径越界拒绝、大小写不匹配、无效/缺失清单、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx
@@ -55,13 +55,13 @@ Start-Process .\report\report.html
 {
   "assets": [
     { "file": "poster.png", "width": 1920, "height": 1080, "max_bytes": 5000000 },
-    { "file": "cover.jpeg", "width": 1200, "height": 630, "max_bytes": 2000000 },
+    { "file": "social/cover.jpeg", "width": 1200, "height": 630, "max_bytes": 2000000 },
     { "file": "social-card.png", "width": 1200, "height": 630, "max_bytes": 2000000 }
   ]
 }
 ```
 
-每项都需要 `file`、`width`、`height` 和 `max_bytes`。`file` 必须是文件名，不能包含目录路径；规格值必须是正数。
+每项都需要 `file`、`width`、`height` 和 `max_bytes`。`file` 可写为目录内相对路径，例如 `social/cover.jpeg`；使用 `/` 作为分隔符，不得使用绝对路径、反斜线或 `..` 路径段。规格值必须是正数。
 
 ## 项目结构
 

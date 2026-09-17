@@ -52,3 +52,13 @@ moon run --target native scripts/cli_smoke.mbtx
 - 本轮由 Codex 辅助实现；JPEG 样例由 Pillow 生成且可正常解码。工具只读取尺寸元数据，不验证像素内容、完整解码或 ICC / 色彩配置；参赛者仍需理解并负责最终实现。
 
 Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（6 passed）与 `moon run --target native scripts/cli_smoke.mbtx`；Pillow 确认 `.jpeg` 与 `.JPG` 样例均为 1200×630 JPEG。功能提交 `b0a73de` 的 [GitHub Actions 运行 #35209036435](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35209036435) 中 Ubuntu 与 Windows job 均通过。
+
+## 2026-09-17：支持嵌套交付目录并阻止路径越界
+
+- 清单现在可用 `/` 编写嵌套相对路径；扫描目录树并报告嵌套多余图片，路径仍区分大小写。
+- 拒绝绝对路径、反斜线、盘符冒号、空路径段和 `.` / `..`，不遍历符号链接目录；预期文件若是符号链接，不会被当作普通素材通过。
+- 将真实 JPEG fixture 放入 `social/`，并把问题样例中的额外 JPEG 放入 `exports/`；新增 `../` 越界清单回归和路径拼接单测。
+- README 和演示命令明确使用 `native` 目标；项目依赖的文件系统打开/类型查询 API 当前不支持 Wasm / JS 组合目标，因此没有宣称多后端支持。
+- 本轮由 Codex 辅助实现，fixture 仍是合成文件；尚无真实用户试用或组织方选题确认记录。
+
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native` 和默认 `moon test`（均 8 passed）、CLI smoke，以及 README 通过/失败演示（退出码分别为 `0` / `1`）。推送后待跑 Ubuntu / Windows CI。

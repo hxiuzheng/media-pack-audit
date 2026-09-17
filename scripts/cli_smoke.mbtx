@@ -8,8 +8,8 @@ import {
 ///|
 async fn main {
   let clean = @shell.Cmd("moon", [
-    "run", "cmd/main", "--", "examples/clean/media-pack.json", "examples/clean/assets",
-    "--output", "_build/cli-smoke/clean",
+    "run", "--target", "native", "cmd/main", "--", "examples/clean/media-pack.json",
+    "examples/clean/assets", "--output", "_build/cli-smoke/clean",
   ]).output()
   if clean.exit_code() != 0 {
     raise Failure::Failure(
@@ -24,7 +24,7 @@ async fn main {
   let clean_html = @fs.read_file("_build/cli-smoke/clean/report.html").text()
   if !clean_json.contains("\"passed\": 2") ||
     !clean_json.contains("\"failed\": 0") ||
-    !clean_json.contains("cover.jpeg") ||
+    !clean_json.contains("social/cover.jpeg") ||
     !clean_json.contains("1200 × 630") ||
     !clean_html.contains("片盒点检") {
     raise Failure::Failure(
@@ -33,8 +33,8 @@ async fn main {
   }
 
   let findings = @shell.Cmd("moon", [
-    "run", "cmd/main", "--", "examples/demo/media-pack.json", "examples/demo/assets",
-    "--output", "_build/cli-smoke/findings",
+    "run", "--target", "native", "cmd/main", "--", "examples/demo/media-pack.json",
+    "examples/demo/assets", "--output", "_build/cli-smoke/findings",
   ]).output()
   if findings.exit_code() != 1 {
     raise Failure::Failure(
@@ -47,15 +47,15 @@ async fn main {
   }
   let findings_json = @fs.read_file("_build/cli-smoke/findings/report.json").text()
   if !findings_json.contains("\"failed\": 3") ||
-    !findings_json.contains("cover.JPG") {
+    !findings_json.contains("exports/cover.JPG") {
     raise Failure::Failure(
-      "finding sample should report the missing JPEG fixture and both extra image files",
+      "finding sample should report the missing nested image and both extra image paths",
     )
   }
 
   let case_mismatch = @shell.Cmd("moon", [
-    "run", "cmd/main", "--", "examples/case-mismatch/media-pack.json", "examples/case-mismatch/assets",
-    "--output", "_build/cli-smoke/case-mismatch",
+    "run", "--target", "native", "cmd/main", "--", "examples/case-mismatch/media-pack.json",
+    "examples/case-mismatch/assets", "--output", "_build/cli-smoke/case-mismatch",
   ]).output()
   if case_mismatch.exit_code() != 1 {
     raise Failure::Failure(
@@ -73,8 +73,8 @@ async fn main {
   }
 
   let invalid_manifest = @shell.Cmd("moon", [
-    "run", "cmd/main", "--", "examples/invalid/media-pack.json", "examples/clean/assets",
-    "--output", "_build/cli-smoke/invalid",
+    "run", "--target", "native", "cmd/main", "--", "examples/invalid/media-pack.json",
+    "examples/clean/assets", "--output", "_build/cli-smoke/invalid",
   ]).output()
   if invalid_manifest.exit_code() != 1 {
     raise Failure::Failure(
@@ -82,9 +82,26 @@ async fn main {
     )
   }
 
+  let traversal_manifest = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "examples/invalid/traversal.json",
+    "examples/clean/assets", "--output", "_build/cli-smoke/traversal",
+  ]).output()
+  if traversal_manifest.exit_code() != 1 {
+    raise Failure::Failure(
+      "parent-directory traversal should return 1, got \{traversal_manifest.exit_code()}",
+    )
+  }
+  let traversal_json = @fs.read_file("_build/cli-smoke/traversal/report.json").text()
+  if !traversal_json.contains("..") ||
+    !traversal_json.contains("安全相对路径") {
+    raise Failure::Failure(
+      "parent-directory traversal should be rejected with a path safety error",
+    )
+  }
+
   let missing_manifest = @shell.Cmd("moon", [
-    "run", "cmd/main", "--", "examples/clean/missing.json", "examples/clean/assets",
-    "--output", "_build/cli-smoke/missing",
+    "run", "--target", "native", "cmd/main", "--", "examples/clean/missing.json",
+    "examples/clean/assets", "--output", "_build/cli-smoke/missing",
   ]).output()
   if missing_manifest.exit_code() != 1 {
     raise Failure::Failure(
@@ -94,8 +111,8 @@ async fn main {
 
   @fs.write_file("_build/cli-smoke/output-file", "occupied")
   let output_file = @shell.Cmd("moon", [
-    "run", "cmd/main", "--", "examples/clean/media-pack.json", "examples/clean/assets",
-    "--output", "_build/cli-smoke/output-file",
+    "run", "--target", "native", "cmd/main", "--", "examples/clean/media-pack.json",
+    "examples/clean/assets", "--output", "_build/cli-smoke/output-file",
   ]).output()
   if output_file.exit_code() != 1 {
     raise Failure::Failure(
@@ -104,6 +121,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, findings=1, case mismatch=1, invalid/missing manifest=1, output path conflict=1",
+    "CLI smoke passed: clean=0, findings=1, case mismatch=1, invalid/missing/traversal manifest=1, output path conflict=1",
   )
 }

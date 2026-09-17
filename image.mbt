@@ -233,7 +233,7 @@ pub async fn scan_assets(
     })
   }
 
-  let entries = @fs.readdir(asset_dir, sort=true)
+  let entries = collect_asset_files(asset_dir)
   for spec in manifest.assets {
     let mut duplicate = false
     for previous in seen_files {
@@ -243,12 +243,12 @@ pub async fn scan_assets(
     }
     seen_files.push(spec.file)
 
-    if !is_safe_filename(spec.file) {
+    if !is_safe_asset_path(spec.file) {
       results.push({
         file: spec.file,
         status: "FAIL",
         observed: "—",
-        details: "清单中的 file 必须是单层文件名，不能包含路径",
+        details: "file 必须是使用 / 分隔的安全相对路径，不能包含 ..、绝对路径或 Windows 分隔符",
       })
       continue
     }
@@ -283,8 +283,8 @@ pub async fn scan_assets(
       }
     }
 
-    let path = join_path(asset_dir, spec.file)
-    if !contains_entry(entries, spec.file) || !@fs.exists(path) {
+    let path = join_asset_path(asset_dir, spec.file)
+    if !contains_entry(entries, spec.file) {
       results.push({
         file: spec.file,
         status: "FAIL",
@@ -349,7 +349,7 @@ pub async fn scan_assets(
         }
       }
       if !expected {
-        let path = join_path(asset_dir, name)
+        let path = join_asset_path(asset_dir, name)
         if @fs.kind(path, follow_symlink=false) == @fs.FileKind::Regular {
           let size = @fs.file_size(path)
           results.push({
@@ -373,38 +373,4 @@ pub async fn scan_assets(
     }
   }
   { asset_dir, checked: results.length(), passed, failed, results, }
-}
-
-///|
-fn contains_entry(entries : Array[String], expected : String) -> Bool {
-  for entry in entries {
-    if entry == expected {
-      return true
-    }
-  }
-  false
-}
-
-///|
-fn is_safe_filename(name : String) -> Bool {
-  if name == "" || name == "." || name == ".." {
-    return false
-  }
-  for character in name {
-    if character == '/' || character == '\\' {
-      return false
-    }
-  }
-  true
-}
-
-///|
-fn join_path(root : String, name : String) -> String {
-  if root.has_suffix("/") || root.has_suffix("\\") {
-    root + name
-  } else if root.contains("\\") {
-    root + "\\" + name
-  } else {
-    root + "/" + name
-  }
 }
