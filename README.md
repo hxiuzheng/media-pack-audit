@@ -17,6 +17,7 @@
 - JSON、HTML 和 CLI 摘要会记录所用清单原始字节的 SHA-256，方便把归档报告对应回当时的规格文件；清单空格或换行变化也会改变指纹。清单与图片指纹都只是内容标识，不是来源认证或数字签名。
 - 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/WebP/GIF 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。相同指纹会提示潜在重复导出，仅供人工确认，不会判为失败。超过清单大小上限的文件会跳过哈希；PNG CRC/结构检查和 WebP RIFF 块边界检查仍会执行。
 - 检查清单中的重复文件名、不安全路径和无效规格，并提示同一素材包中 SHA-256 相同的潜在重复文件；提示不改变通过/失败状态。
+- 严格检查 JSON 清单字段：只接受顶层 `assets` 及素材项中的 `file`、`width`、`height`、`max_bytes`；拼错或暂不支持的字段会在检查前指出路径并拒绝运行，避免规格被静默忽略。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
@@ -46,7 +47,7 @@ moon run --target native cmd/main -- examples/duplicates/media-pack.json example
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（核对 PNG/WebP 哈希、清单图片间相同 SHA-256 的提示、额外图片与清单图片间的相同哈希提示、多种 WebP 头尺寸、无图像数据块的 VP8X 与非零 RIFF 填充拒绝、跨 64 KiB 的哈希分块、超限时跳过哈希、尺寸与文件大小错误同时显示要求值和实际值、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
+运行 CLI 端到端回归（核对原始清单 SHA-256、未知顶层/素材字段拒绝、PNG/WebP 哈希、清单图片间相同 SHA-256 的提示、额外图片与清单图片间的相同哈希提示、多种 WebP 头尺寸、无图像数据块的 VP8X 与非零 RIFF 填充拒绝、跨 64 KiB 的哈希分块、超限时跳过哈希、尺寸与文件大小错误同时显示要求值和实际值、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx
@@ -72,7 +73,7 @@ Start-Process .\report\report.html
 }
 ```
 
-每项都需要 `file`、`width`、`height` 和 `max_bytes`。`file` 可写为目录内相对路径，例如 `social/cover.jpeg`；使用 `/` 作为分隔符，不得使用绝对路径、反斜线或 `..` 路径段。规格值必须是正数。
+每项都需要 `file`、`width`、`height` 和 `max_bytes`，且当前版本拒绝未识别字段（例如把 `max_bytes` 错拼成 `max_byts`），避免忽略用户写下的要求。`file` 可写为目录内相对路径，例如 `social/cover.jpeg`；使用 `/` 作为分隔符，不得使用绝对路径、反斜线或 `..` 路径段。规格值必须是正数。
 
 ## 项目结构
 
@@ -83,6 +84,7 @@ Start-Process .\report\report.html
 - `examples/clean`：所有规格都通过的素材包。
 - `examples/duplicates`：两份内容相同的 WebP 素材，演示潜在重复提示但仍通过。
 - `examples/case-mismatch`：验证跨平台文件名大小写一致性的样例。
+- `examples/invalid`：无效清单、路径越界以及未知字段样例。
 - `scripts/cli_smoke.mbtx`：端到端验证 CLI 的退出码和报告生成。
 
 ## 参赛计划

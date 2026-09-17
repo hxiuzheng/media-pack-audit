@@ -50,7 +50,15 @@ async fn main {
   let manifest_data = @fs.read_file(manifest_path)
   let manifest_text = manifest_data.text()
   let manifest_sha256 = @audit.sha256_bytes(manifest_data.binary())
-  let manifest : @audit.Manifest = @json.from_json(@json.parse(manifest_text)) catch {
+  let manifest_json = @json.parse(manifest_text) catch {
+    error => raise Failure::Failure("清单格式错误：\{error}")
+  }
+  match first_unknown_manifest_field(manifest_json) {
+    Some(field) =>
+      raise Failure::Failure("清单格式错误：未知字段 \{field}")
+    None => ()
+  }
+  let manifest : @audit.Manifest = @json.from_json(manifest_json) catch {
     error => raise Failure::Failure("清单格式错误：\{error}")
   }
 
@@ -95,4 +103,38 @@ fn join_path(root : String, name : String) -> String {
   } else {
     root + "/" + name
   }
+}
+
+///|
+/// Reject misspelled or unsupported keys instead of silently ignoring a
+/// handoff requirement.
+fn first_unknown_manifest_field(json : Json) -> String? {
+  match json {
+    Object(root) =>
+      for key, value in root {
+        if key != "assets" {
+          return Some(key)
+        }
+        match value {
+          Array(assets) =>
+            for index in 0..<assets.length() {
+              match assets[index] {
+                Object(fields) =>
+                  for field, _ in fields {
+                    if field != "file" &&
+                      field != "width" &&
+                      field != "height" &&
+                      field != "max_bytes" {
+                      return Some("assets[\{index}].\{field}")
+                    }
+                  }
+                _ => ()
+              }
+            }
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+  None
 }

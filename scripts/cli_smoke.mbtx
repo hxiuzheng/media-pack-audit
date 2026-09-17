@@ -66,6 +66,46 @@ async fn main {
     raise Failure::Failure("HTML report should expose the SHA-256 fingerprint")
   }
 
+  if @fs.exists("_build/cli-smoke/unknown-asset-field/report.json") {
+    @fs.remove("_build/cli-smoke/unknown-asset-field/report.json")
+  }
+  if @fs.exists("_build/cli-smoke/unknown-asset-field/report.html") {
+    @fs.remove("_build/cli-smoke/unknown-asset-field/report.html")
+  }
+  let unknown_asset_field = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "examples/invalid/unknown-asset-field.json",
+    "examples/clean/assets", "--output", "_build/cli-smoke/unknown-asset-field",
+  ]).output()
+  let unknown_asset_output = unknown_asset_field.stdout() +
+    unknown_asset_field.stderr()
+  if unknown_asset_field.exit_code() != 1 ||
+    !unknown_asset_output.contains("未知字段 assets[0].max_byts") ||
+    @fs.exists("_build/cli-smoke/unknown-asset-field/report.json") {
+    raise Failure::Failure(
+      "unknown asset keys should stop the audit before producing a passing report",
+    )
+  }
+
+  if @fs.exists("_build/cli-smoke/unknown-root-field/report.json") {
+    @fs.remove("_build/cli-smoke/unknown-root-field/report.json")
+  }
+  if @fs.exists("_build/cli-smoke/unknown-root-field/report.html") {
+    @fs.remove("_build/cli-smoke/unknown-root-field/report.html")
+  }
+  let unknown_root_field = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "examples/invalid/unknown-top-level-field.json",
+    "examples/clean/assets", "--output", "_build/cli-smoke/unknown-root-field",
+  ]).output()
+  let unknown_root_output = unknown_root_field.stdout() +
+    unknown_root_field.stderr()
+  if unknown_root_field.exit_code() != 1 ||
+    !unknown_root_output.contains("未知字段 verison") ||
+    @fs.exists("_build/cli-smoke/unknown-root-field/report.json") {
+    raise Failure::Failure(
+      "unknown root keys should stop the audit before producing a passing report",
+    )
+  }
+
   let duplicate_sample = @shell.Cmd("moon", [
     "run", "--target", "native", "cmd/main", "--", "examples/duplicates/media-pack.json",
     "examples/duplicates/assets", "--output", "_build/cli-smoke/duplicates",
@@ -373,6 +413,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, duplicate-content info=0, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, duplicate-content info=0, unknown manifest fields=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
