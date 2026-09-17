@@ -51,4 +51,4 @@ moon run --target native scripts/cli_smoke.mbtx
 - 新增 JPEG baseline、progressive、损坏 marker / frame length 单元测试；README、项目简介与初审清单同步说明支持范围和边界。
 - 本轮由 Codex 辅助实现；JPEG 样例由 Pillow 生成且可正常解码。工具只读取尺寸元数据，不验证像素内容、完整解码或 ICC / 色彩配置；参赛者仍需理解并负责最终实现。
 
-Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（6 passed）与 `moon run --target native scripts/cli_smoke.mbtx`；Pillow 确认 `.jpeg` 与 `.JPG` 样例均为 1200×630 JPEG。远端 CI 待推送后验证。
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（6 passed）与 `moon run --target native scripts/cli_smoke.mbtx`；Pillow 确认 `.jpeg` 与 `.JPG` 样例均为 1200×630 JPEG。功能提交 `b0a73de` 的 [GitHub Actions 运行 #35209036435](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35209036435) 中 Ubuntu 与 Windows job 均通过。
