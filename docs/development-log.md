@@ -79,3 +79,12 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 本轮由 Codex 辅助实现；没有改变素材点检范围，也没有外部用户试用记录。
 
 Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（10 passed）和 CLI smoke。功能提交 `2a8ce2a` 的 [GitHub Actions 运行 #35212045289](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35212045289) 中 Ubuntu 与 Windows job 均通过。
+
+## 2026-09-17：拒绝 PNG IHDR 校验和损坏的素材
+
+- 修正此前只读 PNG 尺寸字段、但没有核对 IHDR CRC 的漏检：现在校验 IHDR 块 CRC-32/ISO-HDLC，头部字段受损时不能以尺寸正确通过。
+- 用 `123456789` 标准向量测试 CRC 实现；单测包含 CRC 正确与单字节损坏的 IHDR，端到端 smoke 则运行 CLI 并断言失败报告会保留具体格式错误。
+- 更新 README、项目简介和初审清单，明确只校验 IHDR 的 CRC；后续 PNG 块和图像压缩数据仍未做完整性校验，也不解码像素。
+- 本轮 Codex 辅助实现，测试夹具为合成数据；没有外部用户试用或新增用户反馈记录。
+
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（12 passed）和 `moon run --target native scripts/cli_smoke.mbtx`。提交 `31b8a61` 的 [GitHub Actions 运行 #35213038689](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213038689) 中 Ubuntu 与 Windows job 均成功。
