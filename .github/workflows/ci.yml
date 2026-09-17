@@ -1,0 +1,31 @@
+name: MoonBit CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  native:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable MoonBit
+        shell: bash
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s latest
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Show toolchain
+        run: moon version --all
+      - name: Resolve dependencies
+        run: moon update
+      - name: Format
+        run: |
+          moon fmt --check
+          moon fmt --check scripts/cli_smoke.mbtx
+      - name: Check without warnings
+        run: moon check --target native --deny-warn
+      - name: Test native target
+        run: moon test --target native
+      - name: Smoke-test CLI exit codes and reports
+        run: moon run --target native scripts/cli_smoke.mbtx

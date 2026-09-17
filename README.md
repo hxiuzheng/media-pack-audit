@@ -26,10 +26,22 @@
 ```sh
 moon check --target native
 moon test
-moon run cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report
+moon run cmd/main -- examples/clean/media-pack.json examples/clean/assets --output report
 ```
 
-命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。示例刻意保留了一个缺失的 `social-card.png`，并在目录中放入一张未列入清单的 `texture.png`；预期结果为 1 项通过、2 项需处理。
+命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。通过时退出码为 `0`；清单、目录有问题或检测发现未通过项时返回非零，适合接入 CI。检查发现不合格素材时仍会先保存两种报告。
+
+仓库还附带一个刻意有问题的样例：它缺少 `social-card.png`，并多出未登记的 `texture.png`。运行后会生成报告并以退出码 `1` 结束，这是预期行为：
+
+```sh
+moon run cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
+```
+
+运行 CLI 端到端回归（通过、检测失败、无效/缺失清单、输出路径冲突）：
+
+```sh
+moon run --target native scripts/cli_smoke.mbtx
+```
 
 Windows PowerShell 同样可以使用以上 Moon 命令；查看报告可运行：
 
@@ -56,10 +68,16 @@ Start-Process .\report\report.html
 - `report.mbt`：HTML 报告及文本转义。
 - `cmd/main`：命令行入口与报告落盘。
 - `examples/demo`：可以直接运行的最小示例素材包。
+- `examples/clean`：所有规格都通过的素材包。
+- `scripts/cli_smoke.mbtx`：端到端验证 CLI 的退出码和报告生成。
 
 ## 参赛计划
 
 本项目刻意把范围控制在可解释、可演示、可测试的一条链路：清单输入 → 文件点检 → HTML/JSON 交付报告。后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。是否与其他参赛者方向重叠，需要向活动组织者确认；提交项目前建议先发项目简介征求选题确认。
+
+## AI 协作说明
+
+开发过程中使用 Codex 辅助代码实现、MoonBit API 查询、测试和文档整理。参赛者需要逐项复核改动、理解实现并对最终提交负责；尚未理解的代码应先验证和学习，再作为参赛成果进行说明。
 
 ## License
 

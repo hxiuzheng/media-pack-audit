@@ -1,0 +1,84 @@
+///|
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/shell",
+}
+
+///|
+async fn main {
+  let clean = @shell.Cmd("moon", [
+    "run", "cmd/main", "--", "examples/clean/media-pack.json", "examples/clean/assets",
+    "--output", "_build/cli-smoke/clean",
+  ]).output()
+  if clean.exit_code() != 0 {
+    raise Failure::Failure(
+      "clean sample should return 0, got \{clean.exit_code()}\n\{clean.stderr()}",
+    )
+  }
+  if !@fs.exists("_build/cli-smoke/clean/report.json") ||
+    !@fs.exists("_build/cli-smoke/clean/report.html") {
+    raise Failure::Failure("clean sample did not create both reports")
+  }
+  let clean_json = @fs.read_file("_build/cli-smoke/clean/report.json").text()
+  let clean_html = @fs.read_file("_build/cli-smoke/clean/report.html").text()
+  if !clean_json.contains("\"failed\": 0") ||
+    !clean_html.contains("片盒点检") {
+    raise Failure::Failure(
+      "clean sample reports do not contain the expected result",
+    )
+  }
+
+  let findings = @shell.Cmd("moon", [
+    "run", "cmd/main", "--", "examples/demo/media-pack.json", "examples/demo/assets",
+    "--output", "_build/cli-smoke/findings",
+  ]).output()
+  if findings.exit_code() != 1 {
+    raise Failure::Failure(
+      "sample with missing and extra files should return 1, got \{findings.exit_code()}\n\{findings.stdout()}\n\{findings.stderr()}",
+    )
+  }
+  if !@fs.exists("_build/cli-smoke/findings/report.json") ||
+    !@fs.exists("_build/cli-smoke/findings/report.html") {
+    raise Failure::Failure("finding sample did not preserve both reports")
+  }
+  let findings_json = @fs.read_file("_build/cli-smoke/findings/report.json").text()
+  if !findings_json.contains("\"failed\": 2") {
+    raise Failure::Failure("finding sample report should contain two findings")
+  }
+
+  let invalid_manifest = @shell.Cmd("moon", [
+    "run", "cmd/main", "--", "examples/invalid/media-pack.json", "examples/clean/assets",
+    "--output", "_build/cli-smoke/invalid",
+  ]).output()
+  if invalid_manifest.exit_code() != 1 {
+    raise Failure::Failure(
+      "invalid manifest should return 1, got \{invalid_manifest.exit_code()}",
+    )
+  }
+
+  let missing_manifest = @shell.Cmd("moon", [
+    "run", "cmd/main", "--", "examples/clean/missing.json", "examples/clean/assets",
+    "--output", "_build/cli-smoke/missing",
+  ]).output()
+  if missing_manifest.exit_code() != 1 {
+    raise Failure::Failure(
+      "missing manifest should return 1, got \{missing_manifest.exit_code()}",
+    )
+  }
+
+  @fs.write_file("_build/cli-smoke/output-file", "occupied")
+  let output_file = @shell.Cmd("moon", [
+    "run", "cmd/main", "--", "examples/clean/media-pack.json", "examples/clean/assets",
+    "--output", "_build/cli-smoke/output-file",
+  ]).output()
+  if output_file.exit_code() != 1 {
+    raise Failure::Failure(
+      "an output path occupied by a file should return 1, got \{output_file.exit_code()}",
+    )
+  }
+
+  println(
+    "CLI smoke passed: clean=0, findings=1, invalid manifest=1, missing manifest=1, output path conflict=1",
+  )
+}

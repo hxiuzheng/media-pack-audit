@@ -33,30 +33,27 @@ async fn main {
   let output_dir = matches.values["output"][0]
 
   if !@fs.exists(manifest_path) {
-    println("找不到素材清单：\{manifest_path}")
-    return
+    raise Failure::Failure("找不到素材清单：\{manifest_path}")
   }
   if !@fs.exists(assets_dir) {
-    println("找不到素材目录：\{assets_dir}")
-    return
+    raise Failure::Failure("找不到素材目录：\{assets_dir}")
   }
 
   let manifest_text = @fs.read_file(manifest_path).text()
-  let parsed_manifest : @audit.Manifest? = Some(
-    @json.from_json(@json.parse(manifest_text)),
-  ) catch {
-    error => {
-      println("清单格式错误：\{error}")
-      None
-    }
-  }
-  let manifest = match parsed_manifest {
-    Some(value) => value
-    None => return
+  let manifest : @audit.Manifest = @json.from_json(@json.parse(manifest_text)) catch {
+    error => raise Failure::Failure("清单格式错误：\{error}")
   }
 
   let report = @audit.scan_assets(assets_dir, manifest)
-  @fs.mkdir(output_dir, recursive=true)
+  if @fs.exists(output_dir) {
+    if @fs.kind(output_dir, follow_symlink=false) != @fs.FileKind::Directory {
+      raise Failure::Failure(
+        "输出路径已存在但不是普通目录：\{output_dir}",
+      )
+    }
+  } else {
+    @fs.mkdir(output_dir, recursive=true)
+  }
   let json_path = join_path(output_dir, "report.json")
   let html_path = join_path(output_dir, "report.html")
   let json_text = @json.to_json(report).stringify(indent=2)
@@ -71,6 +68,11 @@ async fn main {
   }
   println("HTML 报告：\{html_path}")
   println("JSON 报告：\{json_path}")
+  if report.failed > 0 {
+    raise Failure::Failure(
+      "检查未通过；请根据报告修正素材后重新运行。",
+    )
+  }
 }
 
 ///|
