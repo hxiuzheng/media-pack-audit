@@ -66,45 +66,21 @@ async fn main {
     raise Failure::Failure("HTML report should expose the SHA-256 fingerprint")
   }
 
-  if @fs.exists("_build/cli-smoke/unknown-asset-field/report.json") {
-    @fs.remove("_build/cli-smoke/unknown-asset-field/report.json")
-  }
-  if @fs.exists("_build/cli-smoke/unknown-asset-field/report.html") {
-    @fs.remove("_build/cli-smoke/unknown-asset-field/report.html")
-  }
-  let unknown_asset_field = @shell.Cmd("moon", [
-    "run", "--target", "native", "cmd/main", "--", "examples/invalid/unknown-asset-field.json",
-    "examples/clean/assets", "--output", "_build/cli-smoke/unknown-asset-field",
-  ]).output()
-  let unknown_asset_output = unknown_asset_field.stdout() +
-    unknown_asset_field.stderr()
-  if unknown_asset_field.exit_code() != 1 ||
-    !unknown_asset_output.contains("未知字段 assets[0].max_byts") ||
-    @fs.exists("_build/cli-smoke/unknown-asset-field/report.json") {
-    raise Failure::Failure(
-      "unknown asset keys should stop the audit before producing a passing report",
-    )
-  }
-
-  if @fs.exists("_build/cli-smoke/unknown-root-field/report.json") {
-    @fs.remove("_build/cli-smoke/unknown-root-field/report.json")
-  }
-  if @fs.exists("_build/cli-smoke/unknown-root-field/report.html") {
-    @fs.remove("_build/cli-smoke/unknown-root-field/report.html")
-  }
-  let unknown_root_field = @shell.Cmd("moon", [
-    "run", "--target", "native", "cmd/main", "--", "examples/invalid/unknown-top-level-field.json",
-    "examples/clean/assets", "--output", "_build/cli-smoke/unknown-root-field",
-  ]).output()
-  let unknown_root_output = unknown_root_field.stdout() +
-    unknown_root_field.stderr()
-  if unknown_root_field.exit_code() != 1 ||
-    !unknown_root_output.contains("未知字段 verison") ||
-    @fs.exists("_build/cli-smoke/unknown-root-field/report.json") {
-    raise Failure::Failure(
-      "unknown root keys should stop the audit before producing a passing report",
-    )
-  }
+  expect_invalid_manifest(
+    "unknown-asset-field", "examples/invalid/unknown-asset-field.json", "未知字段 assets[0].max_byts",
+  )
+  expect_invalid_manifest(
+    "unknown-root-field", "examples/invalid/unknown-top-level-field.json", "未知字段 verison",
+  )
+  expect_invalid_manifest(
+    "fractional-width", "examples/invalid/fractional-width.json", "assets[0].width 必须是整数",
+  )
+  expect_invalid_manifest(
+    "fractional-height", "examples/invalid/fractional-height.json", "assets[0].height 必须是整数",
+  )
+  expect_invalid_manifest(
+    "fractional-max-bytes", "examples/invalid/fractional-max-bytes.json", "assets[0].max_bytes 必须是整数",
+  )
 
   let duplicate_sample = @shell.Cmd("moon", [
     "run", "--target", "native", "cmd/main", "--", "examples/duplicates/media-pack.json",
@@ -413,6 +389,36 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, duplicate-content info=0, unknown manifest fields=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
+}
+
+///|
+async fn expect_invalid_manifest(
+  name : String,
+  manifest_path : String,
+  expected_error : String,
+) -> Unit {
+  let output_dir = "_build/cli-smoke/" + name
+  let report_json = output_dir + "/report.json"
+  let report_html = output_dir + "/report.html"
+  if @fs.exists(report_json) {
+    @fs.remove(report_json)
+  }
+  if @fs.exists(report_html) {
+    @fs.remove(report_html)
+  }
+  let command = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", manifest_path, "examples/clean/assets",
+    "--output", output_dir,
+  ]).output()
+  let output = command.stdout() + command.stderr()
+  if command.exit_code() != 1 ||
+    !output.contains(expected_error) ||
+    @fs.exists(report_json) ||
+    @fs.exists(report_html) {
+    raise Failure::Failure(
+      "invalid manifest case {name} should fail before writing a report",
+    )
+  }
 }

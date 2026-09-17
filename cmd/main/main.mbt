@@ -53,9 +53,8 @@ async fn main {
   let manifest_json = @json.parse(manifest_text) catch {
     error => raise Failure::Failure("清单格式错误：\{error}")
   }
-  match first_unknown_manifest_field(manifest_json) {
-    Some(field) =>
-      raise Failure::Failure("清单格式错误：未知字段 \{field}")
+  match first_manifest_field_error(manifest_json) {
+    Some(error) => raise Failure::Failure("清单格式错误：\{error}")
     None => ()
   }
   let manifest : @audit.Manifest = @json.from_json(manifest_json) catch {
@@ -106,26 +105,37 @@ fn join_path(root : String, name : String) -> String {
 }
 
 ///|
-/// Reject misspelled or unsupported keys instead of silently ignoring a
-/// handoff requirement.
-fn first_unknown_manifest_field(json : Json) -> String? {
+/// Reject misspelled keys and fractional dimensions or byte limits instead
+/// of silently ignoring or truncating a handoff requirement.
+fn first_manifest_field_error(json : Json) -> String? {
   match json {
     Object(root) =>
       for key, value in root {
         if key != "assets" {
-          return Some(key)
+          return Some("未知字段 \{key}")
         }
         match value {
           Array(assets) =>
             for index in 0..<assets.length() {
               match assets[index] {
                 Object(fields) =>
-                  for field, _ in fields {
+                  for field, field_value in fields {
                     if field != "file" &&
                       field != "width" &&
                       field != "height" &&
                       field != "max_bytes" {
-                      return Some("assets[\{index}].\{field}")
+                      return Some("未知字段 assets[\{index}].\{field}")
+                    }
+                    if field == "width" ||
+                      field == "height" ||
+                      field == "max_bytes" {
+                      match field_value {
+                        Number(number, ..) if number.floor() != number =>
+                          return Some(
+                            "assets[\{index}].\{field} 必须是整数",
+                          )
+                        _ => ()
+                      }
                     }
                   }
                 _ => ()
