@@ -131,4 +131,4 @@ Windows 本机 `moon fmt`、`moon info`、`moon check --target native --deny-war
 - CLI smoke 使用干净 PNG 构造一个宽高和大小上限均错误的清单，并断言两类报告都包含期望尺寸、实际尺寸及大小上限。
 - 本轮由 Codex 辅助实现和测试；回归 fixture 仍是合成数据，没有真实用户试用记录。
 
-Windows 本机 `moon fmt`、`.mbtx` 格式化、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 通过（含错误规格说明断言）。跨平台 CI 将在推送后复核。
+Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 连续两次通过（含 JSON、HTML、命令行错误规格说明断言）。提交 `c3d7911` 的 [GitHub Actions 运行 #35220136903](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35220136903) 中 Ubuntu 与 Windows jobs 均成功。
