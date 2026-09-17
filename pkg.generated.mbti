@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hxiuzheng/media-pack-audit"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn html_escape(String) -> String
+
+pub fn png_dimensions(Bytes) -> (Int, Int)?
+
+pub fn render_html(AuditReport) -> String
+
+pub async fn scan_assets(String, Manifest) -> AuditReport
+
+// Errors
+
+// Types and methods
+pub(all) struct AssetSpec {
+  file : String
+  width : Int
+  height : Int
+  max_bytes : Int
+} derive(ToJson, @json.FromJson)
+
+pub(all) struct AuditReport {
+  asset_dir : String
+  checked : Int
+  passed : Int
+  failed : Int
+  results : Array[CheckResult]
+} derive(ToJson)
+
+pub(all) struct CheckResult {
+  file : String
+  status : String
+  observed : String
+  details : String
+} derive(ToJson)
+
+pub(all) struct Manifest {
+  assets : Array[AssetSpec]
+} derive(ToJson, @json.FromJson)
+
+// Type aliases
+
+// Traits
