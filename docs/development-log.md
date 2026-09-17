@@ -7,7 +7,8 @@
 - 继续检查清单解析时发现，JSON 的小数 `4.9` 会被 MoonBit `Int` 解码截断成 `4`；实测写入 `4.9 × 3.9` 的规格却得到 `4 × 3` 并通过。
 - CLI 现在在转换前验证 `width`、`height`、`max_bytes` 是整数；小数会给出字段路径并停止检查，不会截断成别的要求。
 - 新增宽、高和 `max_bytes` 三个小数清单 fixture；端到端 smoke 核对每项报错、非零退出且不生成报告，并重用清理旧报告的辅助流程。
-- 本机跨平台目标格式、检查、20 项测试与 CLI smoke 待本轮复核；回归仍是合成清单，不代表真实素材试用。
+- 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon check --target native --deny-warn`、20 项原生测试和 CLI smoke 通过。提交 `c758fde` 的 [GitHub Actions 运行 #35235721120](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35235721120) 中 Ubuntu、Windows jobs 均通过格式、无警告检查、20 项原生测试及包含三种小数输入的 CLI smoke。
+- 回归仍是合成清单，不代表真实素材试用或外部反馈。
 
 ## 2026-09-17：拒绝清单中的未知字段
 
