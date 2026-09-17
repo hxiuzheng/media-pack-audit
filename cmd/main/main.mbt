@@ -50,6 +50,11 @@ async fn main {
   let manifest_data = @fs.read_file(manifest_path)
   let manifest_text = manifest_data.text()
   let manifest_sha256 = @audit.sha256_bytes(manifest_data.binary())
+  match first_duplicate_json_key(manifest_text) {
+    Some(key) =>
+      raise Failure::Failure("清单格式错误：重复 JSON 字段 \{key}")
+    None => ()
+  }
   let manifest_json = @json.parse(manifest_text) catch {
     error => raise Failure::Failure("清单格式错误：\{error}")
   }
@@ -102,6 +107,70 @@ fn join_path(root : String, name : String) -> String {
   } else {
     root + "/" + name
   }
+}
+
+///|
+/// JSON objects normally decode into maps, which erase repeated member names.
+/// Scan the original text first so ambiguous requirements cannot pass silently.
+fn first_duplicate_json_key(text : String) -> String? {
+  let input = text[:]
+  let object_keys : Array[Map[String, Bool]] = []
+  let mut in_string = false
+  let mut escaped = false
+  let mut quote_start = 0
+  for index in 0..<input.length() {
+    let code = input.unsafe_get(index)
+    if in_string {
+      if escaped {
+        escaped = false
+      } else if code == 92 {
+        escaped = true
+      } else if code == 34 {
+        in_string = false
+        let mut colon = index + 1
+        while colon < input.length() {
+          let whitespace = input.unsafe_get(colon)
+          if whitespace == 32 ||
+            whitespace == 9 ||
+            whitespace == 10 ||
+            whitespace == 13 {
+            colon += 1
+          } else {
+            break
+          }
+        }
+        if colon < input.length() &&
+          input.unsafe_get(colon) == 58 &&
+          object_keys.length() > 0 {
+          let key_literal = input
+            .view(start_offset=quote_start, end_offset=index + 1)
+            .to_owned()
+          let parsed_key = @json.parse(key_literal) catch { _ => Json::null() }
+          match parsed_key {
+            String(key) => {
+              let last = object_keys.length() - 1
+              let keys = object_keys[last]
+              if keys.contains(key) {
+                return Some(key)
+              }
+              keys.set(key, true)
+              object_keys[last] = keys
+            }
+            _ => ()
+          }
+        }
+      }
+    } else if code == 34 {
+      in_string = true
+      escaped = false
+      quote_start = index
+    } else if code == 123 {
+      object_keys.push(Map([]))
+    } else if code == 125 {
+      ignore(object_keys.pop())
+    }
+  }
+  None
 }
 
 ///|

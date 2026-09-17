@@ -83,6 +83,9 @@ async fn main {
   expect_invalid_manifest(
     "fractional-max-bytes", "examples/invalid/fractional-max-bytes.json", "assets[0].max_bytes 必须是整数",
   )
+  expect_invalid_manifest(
+    "duplicate-width-key", "examples/invalid/duplicate-width-key.json", "重复 JSON 字段 width",
+  )
 
   let duplicate_sample = @shell.Cmd("moon", [
     "run", "--target", "native", "cmd/main", "--", "examples/duplicates/media-pack.json",
