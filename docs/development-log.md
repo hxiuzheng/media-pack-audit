@@ -7,7 +7,7 @@
 - 素材清单支持可选 `label`，用于填写“课程主视觉”“社媒封面”等对交付方有意义的用途名称。
 - HTML 与 JSON 检查结果保留标签；HTML 新增“用途”列并通过 HTML 转义函数输出，标签缺省时显示占位符，不影响旧清单。
 - clean 示例加入含中文和 `&` 的用途标签，端到端回归核对 JSON 原文与 HTML 转义后的显示；其他未填标签的素材继续通过现有回归。
-- README、项目简介和初审测试项同步说明。跨平台验证待本轮完成。
+- README、项目简介和初审测试项同步说明。本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn`、20 项原生测试及 CLI smoke 通过；提交 `4488695` 的 [GitHub Actions 运行 #35236668821](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35236668821) 中 Ubuntu 和 Windows jobs 全部通过。
 - 示例仍为合成数据，尚无真实用户试用反馈。
 
 ## 2026-09-17：拒绝小数形式的像素与大小规格
