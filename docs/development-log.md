@@ -157,4 +157,4 @@ Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon c
 - 新增两份相同 WebP 的独立可运行样例，并让错误演示包含一对未登记的相同 WebP；分别覆盖清单内重复与额外图片匹配清单内容。
 - SHA-256 相同表示指纹相同，不作来源认证，也不自动删除、改写或判定图片视觉内容相同。
 
-Windows 本机 `moon fmt --check` 与 `moon fmt --check scripts/cli_smoke.mbtx`、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 20 passed，CLI smoke 通过，包含清单内重复图片保持通过及额外图片命中已登记内容。推送后复核 Ubuntu 与 Windows CI。
+Windows 本机 `moon fmt --check` 与 `moon fmt --check scripts/cli_smoke.mbtx`、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 20 passed，CLI smoke 通过，包含清单内重复图片保持通过及额外图片命中已登记内容。提交 `0659816` 的 [GitHub Actions 运行 #35228552433](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35228552433) 中 Ubuntu 与 Windows jobs 均通过格式检查、无警告检查、20 项原生测试及 CLI smoke。
