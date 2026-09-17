@@ -37,7 +37,7 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过、非法 PNG IHDR 字段、缺失块、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
+运行 CLI 端到端回归（通过、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx

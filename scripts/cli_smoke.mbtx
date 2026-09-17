@@ -54,8 +54,20 @@ async fn main {
     b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x08\x06\x00\x00\x00\xB4\xF4\xAE\xC6\x00\x00\x00\x12IDAT\x78\x9C\x63\x50\x8E\x9E\xF6\x1F\x19\x33\x10\x14\x00\x00\x6A\x2D\x18\xE5\x90\xC0\xD8\xA4\x00\x00\x00\x00IEND\xAE\x42\x60\x82",
   )
   @fs.write_file(
+    "\{corrupt_png_dir}/assets/chunk-length-overrun.png",
+    b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x08\x06\x00\x00\x00\xB4\xF4\xAE\xC6\x7F\xFF\xFF\xFFIDAT",
+  )
+  @fs.write_file(
+    "\{corrupt_png_dir}/assets/missing-iend.png",
+    b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1F\x15\xC4\x89\x00\x00\x00\x0DIDAT\x78\x9C\x63\x60\x60\x60\x60\x00\x00\x00\x05\x00\x01\xA5\xF6\x45\x40",
+  )
+  @fs.write_file(
+    "\{corrupt_png_dir}/assets/trailing-data.png",
+    b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1F\x15\xC4\x89\x00\x00\x00\x0DIDAT\x78\x9C\x63\x60\x60\x60\x60\x00\x00\x00\x05\x00\x01\xA5\xF6\x45\x40\x00\x00\x00\x00IEND\xAE\x42\x60\x82\x00",
+  )
+  @fs.write_file(
     "\{corrupt_png_dir}/media-pack.json",
-    "{\"assets\":[{\"file\":\"corrupt.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"invalid-fields.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"header-only.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"bad-idat-crc.png\",\"width\":4,\"height\":3,\"max_bytes\":100}]}",
+    "{\"assets\":[{\"file\":\"corrupt.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"invalid-fields.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"header-only.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"bad-idat-crc.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"chunk-length-overrun.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"missing-iend.png\",\"width\":1,\"height\":1,\"max_bytes\":100},{\"file\":\"trailing-data.png\",\"width\":1,\"height\":1,\"max_bytes\":100}]}",
   )
   let corrupt_png = @shell.Cmd("moon", [
     "run",
@@ -74,16 +86,19 @@ async fn main {
     )
   }
   let corrupt_png_json = @fs.read_file("\{corrupt_png_dir}/report/report.json").text()
-  if !corrupt_png_json.contains("\"failed\": 4") ||
+  if !corrupt_png_json.contains("\"failed\": 7") ||
     !corrupt_png_json.contains(
       "PNG 结构无效、不完整或 CRC 校验失败",
     ) ||
     !corrupt_png_json.contains("corrupt.png") ||
     !corrupt_png_json.contains("invalid-fields.png") ||
     !corrupt_png_json.contains("header-only.png") ||
-    !corrupt_png_json.contains("bad-idat-crc.png") {
+    !corrupt_png_json.contains("bad-idat-crc.png") ||
+    !corrupt_png_json.contains("chunk-length-overrun.png") ||
+    !corrupt_png_json.contains("missing-iend.png") ||
+    !corrupt_png_json.contains("trailing-data.png") {
     raise Failure::Failure(
-      "invalid IHDR, missing chunks, and a bad IDAT CRC should be reported",
+      "invalid IHDR, truncated/overlong chunks, trailing data, and bad CRC should be reported",
     )
   }
 
@@ -204,6 +219,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, invalid/corrupt PNG=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, invalid/corrupt PNG boundaries=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }

@@ -106,3 +106,11 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 本轮使用 Codex 辅助实现和验证；新回归文件均为合成样例，没有外部用户试用或反馈记录。
 
 本机 Windows 验证：`moon fmt`、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 14 passed；CLI smoke 通过，检查损坏 IHDR、非法 IHDR 字段、缺失图像数据块和 IDAT CRC 错误均得到非零失败报告。编译异步文件系统依赖时 MSVC 输出 `EINVAL` 宏重定义警告，但以上命令均以退出码 0 完成。提交 `b79e37a` 的 [GitHub Actions 运行 #35215623739](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35215623739) 中 Ubuntu 和 Windows job 均成功，包含格式、无警告检查、原生测试及 CLI smoke。
+
+## 2026-09-17：扩展 PNG 容器边界回归
+
+- CLI smoke 增加 chunk 声明长度超出文件范围、包含 IDAT 但缺少 IEND、IEND 后附加字节三种案例；每个 PNG 样例都通过真实 CLI 检查并断言报告失败。
+- 新增 1×1 PNG 样例使用有效 chunk CRC，便于单独验证 IEND 缺失与尾随数据边界；不把 IDAT 解压或像素正确性纳入当前承诺。
+- 同步更新 README、项目简介和初审清单，列明新增回归覆盖。没有新增生产代码或真实用户试用记录。
+
+Windows 本机 `moon fmt`、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（14 passed）及 `moon run --target native scripts/cli_smoke.mbtx` 均通过；格式检查通过，CLI smoke 连续运行两次均成功。包含本轮新增样例的 GitHub Actions 待推送后复核。
