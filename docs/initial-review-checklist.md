@@ -11,7 +11,7 @@
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/demo` | 已满足；本机按命令演示 |
 | 必要测试 | PNG/JPEG/GIF 尺寸测试；PNG CRC 与 SHA-256 标准向量、IHDR 字段、header-only 截断、块长度越界、缺少 IEND、尾随数据和 IDAT CRC 损坏测试；CLI smoke 将跨多块 SHA-256 报告值与独立计算值比对，并验证超限时跳过；另覆盖递归、路径越界、通过/失败报告、大小写不一致及各类无效输入 | 已覆盖当前功能范围；继续按新增行为补测 |
-| 跨平台 CI | [GitHub Actions 运行 #35216322259](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35216322259)：PNG 结构边界回归（长度越界、缺少 IEND、尾随数据）的 Ubuntu 与 Windows job 均通过格式、无警告检查、原生测试和 CLI smoke | 已满足（该提交） |
+| 跨平台 CI | [GitHub Actions 运行 #35218263425](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35218263425)：SHA-256 报告、多块哈希和超限跳过的 Ubuntu 与 Windows jobs 均通过格式、无警告检查、原生测试和 CLI smoke | 已满足（该提交） |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
 | AI 辅助透明且成果可解释 | README 与开发记录明确披露 Codex 辅助 | 文档已披露；参赛者本人仍须理解并能讲解代码 |
