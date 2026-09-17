@@ -174,11 +174,15 @@ async fn main {
     raise Failure::Failure("finding sample did not preserve both reports")
   }
   let findings_json = @fs.read_file("_build/cli-smoke/findings/report.json").text()
-  if !findings_json.contains("\"failed\": 4") ||
+  let findings_html = @fs.read_file("_build/cli-smoke/findings/report.html").text()
+  if !findings_json.contains("\"failed\": 5") ||
+    !findings_json.contains("清单要求 5 × 9，实际 4 × 3") ||
+    !findings_json.contains("超出上限 1 bytes") ||
+    !findings_html.contains("清单要求 5 × 9，实际 4 × 3") ||
     !findings_json.contains("exports/cover.JPG") ||
     !findings_json.contains("exports/preview.GIF") {
     raise Failure::Failure(
-      "finding sample should report the missing image and three extra image paths",
+      "finding sample should show spec failures, one missing image and three extra images",
     )
   }
 

@@ -33,7 +33,7 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 
 命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。CLI 会先确认清单是文件、素材输入是目录；输入路径或清单有问题时给出错误并以非零状态退出。点检完成后，通过时退出码为 `0`；发现素材不合格时仍会先保存两种报告，再返回非零状态，适合接入 CI。
 
-仓库还附带一个刻意有问题的样例：它缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG` 和 `exports/preview.GIF`。运行后会生成报告并以退出码 `1` 结束，这是预期行为：
+仓库还附带一个使用合成图片的刻意错误样例：`poster.png` 的清单宽高和大小上限不匹配，缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG` 和 `exports/preview.GIF`。报告会展示清单要求值与检测值，并以退出码 `1` 结束，这是预期行为：
 
 ```sh
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues

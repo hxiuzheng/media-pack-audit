@@ -132,3 +132,11 @@ Windows 本机 `moon fmt`、`moon info`、`moon check --target native --deny-war
 - 本轮由 Codex 辅助实现和测试；回归 fixture 仍是合成数据，没有真实用户试用记录。
 
 Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 连续两次通过（含 JSON、HTML、命令行错误规格说明断言）。提交 `c3d7911` 的 [GitHub Actions 运行 #35220136903](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35220136903) 中 Ubuntu 与 Windows jobs 均成功。
+
+## 2026-09-17：让可运行失败演示覆盖规格诊断
+
+- 将 `examples/demo` 中合成 `poster.png` 的清单改为故意错误的 5×9 与 1-byte 上限；运行报告现在会同时展示尺寸要求/实际值、体积上限、缺失文件和三项多余图片。
+- 端到端 smoke 断言演示报告的失败计数、JSON/HTML 规格诊断和缺失/多余项；README 与初审清单同步说明这是合成失败夹具，避免被误认为真实用户素材。
+- 本轮更新的是可复现演示，不代表已取得真实用户试用反馈。
+
+Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 连续两次通过；公开失败演示报告 5 项待处理并以预期退出码 1 结束。跨平台 CI 将在推送后复核。
