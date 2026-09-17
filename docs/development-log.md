@@ -150,3 +150,11 @@ Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon c
 - 本轮由 Codex 辅助实现；新增图片均为合成夹具，未完成真实用户试用。
 
 Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 19 passed；CLI smoke 连续两次通过，含通过样例 WebP SHA-256、真实 WebP 清单检查、缺少图像数据的 VP8X 拒绝及非零 RIFF 填充拒绝。提交 `74cd3c5` 的 [GitHub Actions 运行 #35225659928](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35225659928) 中 Ubuntu 与 Windows jobs 均通过格式检查、无警告检查、原生测试及 CLI smoke。
+
+## 2026-09-17：提示素材包中的相同内容指纹
+
+- 复用点检时已生成的 SHA-256，对清单文件和额外图片做包内比对；发现相同指纹时在 JSON/HTML/CLI 详情中提示首个匹配路径，状态仍按原有规格判断，避免把有意复用误判成失败。
+- 新增两份相同 WebP 的独立可运行样例，并让错误演示包含一对未登记的相同 WebP；分别覆盖清单内重复与额外图片匹配清单内容。
+- SHA-256 相同表示指纹相同，不作来源认证，也不自动删除、改写或判定图片视觉内容相同。
+
+Windows 本机 `moon fmt --check` 与 `moon fmt --check scripts/cli_smoke.mbtx`、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 20 passed，CLI smoke 通过，包含清单内重复图片保持通过及额外图片命中已登记内容。推送后复核 Ubuntu 与 Windows CI。

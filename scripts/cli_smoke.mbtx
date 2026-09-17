@@ -52,6 +52,28 @@ async fn main {
     raise Failure::Failure("HTML report should expose the SHA-256 fingerprint")
   }
 
+  let duplicate_sample = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "examples/duplicates/media-pack.json",
+    "examples/duplicates/assets", "--output", "_build/cli-smoke/duplicates",
+  ]).output()
+  if duplicate_sample.exit_code() != 0 {
+    raise Failure::Failure(
+      "duplicate-content sample should remain a passing report, got \{duplicate_sample.exit_code()}",
+    )
+  }
+  let duplicate_json = @fs.read_file("_build/cli-smoke/duplicates/report.json").text()
+  let duplicate_html = @fs.read_file("_build/cli-smoke/duplicates/report.html").text()
+  let duplicate_output = duplicate_sample.stdout() + duplicate_sample.stderr()
+  if !duplicate_json.contains("\"passed\": 2") ||
+    !duplicate_json.contains("\"failed\": 0") ||
+    !duplicate_json.contains("SHA-256 与 original.webp 相同") ||
+    !duplicate_html.contains("SHA-256 与 original.webp 相同") ||
+    !duplicate_output.contains("SHA-256 与 original.webp 相同") {
+    raise Failure::Failure(
+      "matching hashes should be visible without changing the passing status",
+    )
+  }
+
   let empty_webp_dir = "_build/cli-smoke/webp-empty"
   if !@fs.exists("\{empty_webp_dir}/assets") {
     @fs.mkdir("\{empty_webp_dir}/assets", recursive=true)
@@ -227,16 +249,18 @@ async fn main {
   }
   let findings_json = @fs.read_file("_build/cli-smoke/findings/report.json").text()
   let findings_html = @fs.read_file("_build/cli-smoke/findings/report.html").text()
-  if !findings_json.contains("\"failed\": 6") ||
+  if !findings_json.contains("\"failed\": 7") ||
     !findings_json.contains("清单要求 5 × 9，实际 4 × 3") ||
     !findings_json.contains("超出上限 1 bytes") ||
     !findings_html.contains("清单要求 5 × 9，实际 4 × 3") ||
     !findings_json.contains("thumbnail.webp") ||
+    !findings_json.contains("thumbnail-copy.webp") ||
+    !findings_json.contains("可能是重复导出") ||
     !findings_json.contains("texture.png") ||
     !findings_json.contains("exports/cover.JPG") ||
     !findings_json.contains("exports/preview.GIF") {
     raise Failure::Failure(
-      "finding sample should show spec failures, one missing image and four extra images",
+      "finding sample should show spec failures, one missing image, five extra images and a duplicate note",
     )
   }
 
@@ -335,6 +359,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, duplicate-content info=0, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }

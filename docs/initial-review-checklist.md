@@ -9,9 +9,9 @@
 | 公开可访问的项目仓库 | [GitHub 仓库](https://github.com/hxiuzheng/media-pack-audit) | 已满足 |
 | 项目简介 / 一页选题说明 | [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md) | 草案已备；提交前须由参赛者补充真实场景并审阅 |
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
-| 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/demo` | 已满足；本机按命令演示 |
-| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与 SHA-256 向量、PNG 结构边界和哈希分块测试；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机及 Ubuntu / Windows CI 通过 |
-| 跨平台 CI | [GitHub Actions 运行 #35225659928](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35225659928)：提交 `74cd3c5` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、19 项原生测试及 CLI smoke | 已满足（该提交） |
+| 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/duplicates`、`examples/demo` | 已满足；本机按命令演示 |
+| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；SHA-256 标准向量、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机通过；本轮重复内容检测跨平台 CI 待推送复核 |
+| 跨平台 CI | [GitHub Actions 运行 #35225659928](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35225659928)：上一轮 WebP 提交 `74cd3c5` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、19 项原生测试及 CLI smoke | 此前提交已满足；本轮重复检测待新 CI |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
 | AI 辅助透明且成果可解释 | README 与开发记录明确披露 Codex 辅助 | 文档已披露；参赛者本人仍须理解并能讲解代码 |
@@ -30,8 +30,9 @@
 
 ```sh
 moon run --target native cmd/main -- examples/clean/media-pack.json examples/clean/assets --output report
+moon run --target native cmd/main -- examples/duplicates/media-pack.json examples/duplicates/assets --output report-duplicates
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 moon run --target native scripts/cli_smoke.mbtx
 ```
 
-第一条生成全通过的 PNG/JPEG/WebP/GIF 报告；第二条使用合成夹具演示尺寸、大小上限不符、缺失项和多余 PNG/JPEG/WebP/GIF，并以非零状态结束（这是预期结果）；第三条自动检查 CLI 状态码与 JSON/HTML 报告。结束后可打开 `report/report.html` 和 `report-issues/report.html` 展示结果。
+第一条生成全通过的 PNG/JPEG/WebP/GIF 报告；第二条展示两份内容相同的 WebP 且仍保持通过状态；第三条使用合成夹具演示尺寸、大小上限不符、缺失项、多余 PNG/JPEG/WebP/GIF 和潜在重复提示，并以非零状态结束（这是预期结果）；第四条自动检查 CLI 状态码与 JSON/HTML 报告。结束后可打开 `report/report.html`、`report-duplicates/report.html` 和 `report-issues/report.html` 展示结果。

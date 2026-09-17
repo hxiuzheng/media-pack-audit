@@ -14,8 +14,8 @@
 - 读取 PNG IHDR、JPEG SOF、WebP VP8/VP8L/VP8X 头与 GIF 逻辑屏幕尺寸核对像素宽高；PNG 会校验 IHDR 字段、逐块 CRC 和基本容器结构，WebP 会检查 RIFF 长度、块边界和奇数字节填充；不解码图像。
 - 检查文件大小上限，并报告目录中的额外 PNG/JPEG/WebP/GIF。
 - 当尺寸或文件大小不符合清单时，报告会同时写出要求值和实际值，方便直接定位该改哪项素材。
-- 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/WebP/GIF 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。超过清单大小上限的文件会跳过哈希；PNG CRC/结构检查和 WebP RIFF 块边界检查仍会执行。
-- 检查清单中的重复文件名、不安全路径和无效规格。
+- 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/WebP/GIF 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。相同指纹会提示潜在重复导出，仅供人工确认，不会判为失败。超过清单大小上限的文件会跳过哈希；PNG CRC/结构检查和 WebP RIFF 块边界检查仍会执行。
+- 检查清单中的重复文件名、不安全路径和无效规格，并提示同一素材包中 SHA-256 相同的潜在重复文件；提示不改变通过/失败状态。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
@@ -33,13 +33,19 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 
 命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。CLI 会先确认清单是文件、素材输入是目录；输入路径或清单有问题时给出错误并以非零状态退出。点检完成后，通过时退出码为 `0`；发现素材不合格时仍会先保存两种报告，再返回非零状态，适合接入 CI。
 
-仓库还附带一个使用合成图片的刻意错误样例：`poster.png` 的清单宽高和大小上限不匹配，缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG`、`exports/preview.GIF` 和 `exports/thumbnail.webp`。报告会展示清单要求值与检测值，并以退出码 `1` 结束，这是预期行为：
+查看潜在重复内容的独立样例（两个 WebP 字节完全相同；报告提示 SHA-256 相同，但不影响通过状态）：
+
+```sh
+moon run --target native cmd/main -- examples/duplicates/media-pack.json examples/duplicates/assets --output report-duplicates
+```
+
+仓库还附带一个使用合成图片的刻意错误样例：`poster.png` 的清单宽高和大小上限不匹配，缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG`、`exports/preview.GIF`、`exports/thumbnail.webp` 和 `exports/thumbnail-copy.webp`。两个 WebP 文件内容相同，报告会展示规格问题、未登记项和潜在重复提示，并以退出码 1 结束，这是预期行为：
 
 ```sh
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过并核对 PNG/WebP 哈希、多种 WebP 头尺寸、无图像数据块的 VP8X 与非零 RIFF 填充拒绝、跨 64 KiB 的哈希分块、超限时跳过哈希、尺寸与文件大小错误同时显示要求值和实际值、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
+运行 CLI 端到端回归（核对 PNG/WebP 哈希、清单图片间相同 SHA-256 的提示、额外图片与清单图片间的相同哈希提示、多种 WebP 头尺寸、无图像数据块的 VP8X 与非零 RIFF 填充拒绝、跨 64 KiB 的哈希分块、超限时跳过哈希、尺寸与文件大小错误同时显示要求值和实际值、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx
@@ -74,6 +80,7 @@ Start-Process .\report\report.html
 - `cmd/main`：命令行入口与报告落盘。
 - `examples/demo`：可直接运行的多格式错误示例素材包（所有图片都是合成测试夹具）。
 - `examples/clean`：所有规格都通过的素材包。
+- `examples/duplicates`：两份内容相同的 WebP 素材，演示潜在重复提示但仍通过。
 - `examples/case-mismatch`：验证跨平台文件名大小写一致性的样例。
 - `scripts/cli_smoke.mbtx`：端到端验证 CLI 的退出码和报告生成。
 

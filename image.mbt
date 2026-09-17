@@ -502,6 +502,7 @@ pub async fn scan_assets(
 ) -> AuditReport {
   let results : Array[CheckResult] = []
   let seen_files : Array[String] = []
+  let seen_digests : Map[String, String] = Map([])
 
   if manifest.assets.is_empty() {
     results.push({
@@ -644,10 +645,23 @@ pub async fn scan_assets(
       _ => ()
     }
     let status = if issues.is_empty() { "PASS" } else { "FAIL" }
-    let details = if issues.is_empty() {
+    let issue_details = if issues.is_empty() {
       "符合清单规格"
     } else {
       issues.join("；")
+    }
+    let duplicate_details = match
+      register_content_digest(seen_digests, spec.file, sha256) {
+      Some(previous_file) =>
+        "SHA-256 与 \{previous_file} 相同，可能是重复导出，请人工确认"
+      None => ""
+    }
+    let details = if duplicate_details == "" {
+      issue_details
+    } else if issues.is_empty() {
+      duplicate_details
+    } else {
+      "\{issue_details}；\{duplicate_details}"
     }
     results.push({ file: spec.file, status, observed, sha256, details, })
   }
@@ -669,12 +683,18 @@ pub async fn scan_assets(
             Some(value) => value
             None => "—"
           }
+          let details = match
+            register_content_digest(seen_digests, name, sha256) {
+            Some(previous_file) =>
+              "图片文件未列在素材清单中；SHA-256 与 \{previous_file} 相同，可能是重复导出，请人工确认"
+            None => "图片文件未列在素材清单中"
+          }
           results.push({
             file: name,
             status: "EXTRA",
             observed: "\{size} bytes",
             sha256,
-            details: "图片文件未列在素材清单中",
+            details,
           })
         }
       }
