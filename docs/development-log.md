@@ -96,7 +96,7 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 将 smoke 临时目录改为可重复运行；本机连续运行两次均通过。
 - 本轮使用 Codex 辅助实现与核对规范；新增样例均为合成数据，没有外部用户试用或反馈。
 
-本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 14 passed。提交 `af093bd` 的 [GitHub Actions 运行 #35213747460](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213747460) 中 Ubuntu job 已成功；记录本条时 Windows job 仍在运行，结果待复核。
+本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 14 passed。提交 `af093bd` 的 [GitHub Actions 运行 #35213747460](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213747460) 最初检查时 Windows job 尚未完成，后续复核确认 Ubuntu 与 Windows 两个 job 均成功。
 
 ## 2026-09-17：校验 PNG 全部块的 CRC 与基本结构
 
@@ -105,4 +105,4 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - CLI smoke 新增“只有合法 IHDR 的截断文件”和“IDAT CRC 错误”案例。README、项目简介和初审清单明确说明：当前验证 PNG 容器基本结构及 CRC，不等于检查所有块的语义，也不解压或解码像素。
 - 本轮使用 Codex 辅助实现和验证；新回归文件均为合成样例，没有外部用户试用或反馈记录。
 
-本机 Windows 验证：`moon fmt`、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 14 passed；CLI smoke 通过，检查损坏 IHDR、非法 IHDR 字段、缺失图像数据块和 IDAT CRC 错误均得到非零失败报告。编译异步文件系统依赖时 MSVC 输出 `EINVAL` 宏重定义警告，但以上命令均以退出码 0 完成。最新提交的 Ubuntu / Windows CI 待推送后复核；前一提交 `af093bd` 的 [GitHub Actions 运行 #35213747460](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213747460) 仍显示 In progress，因此不能记录为跨平台通过。
+本机 Windows 验证：`moon fmt`、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 14 passed；CLI smoke 通过，检查损坏 IHDR、非法 IHDR 字段、缺失图像数据块和 IDAT CRC 错误均得到非零失败报告。编译异步文件系统依赖时 MSVC 输出 `EINVAL` 宏重定义警告，但以上命令均以退出码 0 完成。提交 `b79e37a` 的 [GitHub Actions 运行 #35215623739](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35215623739) 中 Ubuntu 和 Windows job 均成功，包含格式、无警告检查、原生测试及 CLI smoke。
