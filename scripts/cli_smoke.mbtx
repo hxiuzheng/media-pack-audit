@@ -33,6 +33,40 @@ async fn main {
     )
   }
 
+  let corrupt_png_dir = "_build/cli-smoke/png-crc"
+  @fs.mkdir("\{corrupt_png_dir}/assets", recursive=true)
+  @fs.write_file(
+    "\{corrupt_png_dir}/assets/corrupt.png",
+    b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x08\x06\x00\x00\x00\xB4\xF4\xAE\xC7",
+  )
+  @fs.write_file(
+    "\{corrupt_png_dir}/media-pack.json",
+    "{\"assets\":[{\"file\":\"corrupt.png\",\"width\":4,\"height\":3,\"max_bytes\":100}]}",
+  )
+  let corrupt_png = @shell.Cmd("moon", [
+    "run",
+    "--target",
+    "native",
+    "cmd/main",
+    "--",
+    "\{corrupt_png_dir}/media-pack.json",
+    "\{corrupt_png_dir}/assets",
+    "--output",
+    "\{corrupt_png_dir}/report",
+  ]).output()
+  if corrupt_png.exit_code() != 1 {
+    raise Failure::Failure(
+      "a PNG with a corrupted IHDR checksum should return 1, got {corrupt_png.exit_code()}",
+    )
+  }
+  let corrupt_png_json = @fs.read_file("\{corrupt_png_dir}/report/report.json").text()
+  if !corrupt_png_json.contains("\"failed\": 1") ||
+    !corrupt_png_json.contains("PNG 文件头无效或不完整") {
+    raise Failure::Failure(
+      "a PNG with a corrupted IHDR checksum should be reported as invalid",
+    )
+  }
+
   let findings = @shell.Cmd("moon", [
     "run", "--target", "native", "cmd/main", "--", "examples/demo/media-pack.json",
     "examples/demo/assets", "--output", "_build/cli-smoke/findings",
@@ -150,6 +184,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, bad PNG checksum=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }

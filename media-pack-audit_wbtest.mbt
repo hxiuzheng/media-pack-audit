@@ -3,6 +3,11 @@
 // Keep them focused; public behavior belongs in `_test.mbt`.
 
 ///|
+test "PNG CRC-32 matches the standard check vector" {
+  assert_true(png_crc32(b"123456789", 0, 9) == -873187034)
+}
+
+///|
 test "accepts nested relative asset paths and rejects traversal" {
   assert_true(is_safe_asset_path("social/cover.jpeg"))
   assert_true(is_safe_asset_path("poster.png"))

@@ -48,6 +48,9 @@ pub fn png_dimensions(bytes : Bytes) -> (Int, Int)? {
     bytes[15] != b'R' {
     return None
   }
+  if !png_ihdr_crc_is_valid(bytes) {
+    return None
+  }
 
   let width = read_png_dimension(bytes, 16)
   let height = read_png_dimension(bytes, 20)
@@ -55,6 +58,33 @@ pub fn png_dimensions(bytes : Bytes) -> (Int, Int)? {
     (Some(w), Some(h)) if w > 0 && h > 0 => Some((w, h))
     _ => None
   }
+}
+
+///|
+/// Validate the CRC for the first PNG chunk (IHDR), without decoding image data.
+fn png_ihdr_crc_is_valid(bytes : Bytes) -> Bool {
+  let crc = png_crc32(bytes, 12, 29)
+  bytes[29].to_int() == ((crc >> 24) & 0xFF) &&
+  bytes[30].to_int() == ((crc >> 16) & 0xFF) &&
+  bytes[31].to_int() == ((crc >> 8) & 0xFF) &&
+  bytes[32].to_int() == (crc & 0xFF)
+}
+
+///|
+/// CRC-32/ISO-HDLC as used by PNG chunks.
+fn png_crc32(bytes : Bytes, start : Int, end : Int) -> Int {
+  let mut crc = -1
+  for index in start..<end {
+    crc = crc ^ bytes[index].to_int()
+    for _ in 0..<8 {
+      if (crc & 1) == 1 {
+        crc = ((crc >> 1) & 0x7FFFFFFF) ^ 0xEDB88320
+      } else {
+        crc = (crc >> 1) & 0x7FFFFFFF
+      }
+    }
+  }
+  crc ^ -1
 }
 
 ///|
