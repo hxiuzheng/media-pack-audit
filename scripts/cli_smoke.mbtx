@@ -47,6 +47,25 @@ async fn main {
     raise Failure::Failure("finding sample report should contain two findings")
   }
 
+  let case_mismatch = @shell.Cmd("moon", [
+    "run", "cmd/main", "--", "examples/case-mismatch/media-pack.json", "examples/case-mismatch/assets",
+    "--output", "_build/cli-smoke/case-mismatch",
+  ]).output()
+  if case_mismatch.exit_code() != 1 {
+    raise Failure::Failure(
+      "a case-mismatched file should return 1, got \{case_mismatch.exit_code()}",
+    )
+  }
+  let case_mismatch_json = @fs.read_file(
+    "_build/cli-smoke/case-mismatch/report.json",
+  ).text()
+  if !case_mismatch_json.contains("\"passed\": 0") ||
+    !case_mismatch_json.contains("\"failed\": 2") {
+    raise Failure::Failure(
+      "case mismatch should be reported as a missing required file and an extra file",
+    )
+  }
+
   let invalid_manifest = @shell.Cmd("moon", [
     "run", "cmd/main", "--", "examples/invalid/media-pack.json", "examples/clean/assets",
     "--output", "_build/cli-smoke/invalid",
@@ -79,6 +98,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, findings=1, invalid manifest=1, missing manifest=1, output path conflict=1",
+    "CLI smoke passed: clean=0, findings=1, case mismatch=1, invalid/missing manifest=1, output path conflict=1",
   )
 }

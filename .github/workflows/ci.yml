@@ -29,3 +29,28 @@ jobs:
         run: moon test --target native
       - name: Smoke-test CLI exit codes and reports
         run: moon run --target native scripts/cli_smoke.mbtx
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install stable MoonBit
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+          irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
+          "$HOME/.moon/bin" >> $env:GITHUB_PATH
+      - name: Show toolchain
+        run: moon version --all
+      - name: Resolve dependencies
+        run: moon update
+      - name: Format
+        run: |
+          moon fmt --check
+          moon fmt --check scripts/cli_smoke.mbtx
+      - name: Check without warnings
+        run: moon check --target native --deny-warn
+      - name: Test native target
+        run: moon test --target native
+      - name: Smoke-test CLI exit codes and reports
+        run: moon run --target native scripts/cli_smoke.mbtx

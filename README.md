@@ -17,7 +17,7 @@
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
-当前版本只支持**单层目录中的小写 `.png` 文件**。尺寸检查依据 PNG IHDR 文件头，不解码像素、不验证整文件 CRC，也不检查色彩配置、透明边缘、视觉内容或子目录。它用于交付预检，不替代完整图像解码器和人工视觉验收。
+当前版本只支持**单层目录中的小写 `.png` 文件**。清单文件名必须与目录项精确匹配（包括大小写），这样在 Windows/macOS 和 Linux 上会得到一致结果。尺寸检查依据 PNG IHDR 文件头，不解码像素、不验证整文件 CRC，也不检查色彩配置、透明边缘、视觉内容或子目录。它用于交付预检，不替代完整图像解码器和人工视觉验收。
 
 ## 快速开始
 
@@ -37,7 +37,7 @@ moon run cmd/main -- examples/clean/media-pack.json examples/clean/assets --outp
 moon run cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过、检测失败、无效/缺失清单、输出路径冲突）：
+运行 CLI 端到端回归（通过、检测失败、大小写不匹配、无效/缺失清单、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx
@@ -69,6 +69,7 @@ Start-Process .\report\report.html
 - `cmd/main`：命令行入口与报告落盘。
 - `examples/demo`：可以直接运行的最小示例素材包。
 - `examples/clean`：所有规格都通过的素材包。
+- `examples/case-mismatch`：验证跨平台文件名大小写一致性的样例。
 - `scripts/cli_smoke.mbtx`：端到端验证 CLI 的退出码和报告生成。
 
 ## 参赛计划

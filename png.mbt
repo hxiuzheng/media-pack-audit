@@ -99,6 +99,7 @@ pub async fn scan_assets(
     })
   }
 
+  let entries = @fs.readdir(asset_dir, sort=true)
   for spec in manifest.assets {
     let mut duplicate = false
     for previous in seen_files {
@@ -146,12 +147,12 @@ pub async fn scan_assets(
     }
 
     let path = join_path(asset_dir, spec.file)
-    if !@fs.exists(path) {
+    if !contains_entry(entries, spec.file) || !@fs.exists(path) {
       results.push({
         file: spec.file,
         status: "FAIL",
         observed: "缺失",
-        details: "清单要求的文件没有交付",
+        details: "清单要求的文件名（含大小写）没有交付",
       })
       continue
     }
@@ -193,7 +194,6 @@ pub async fn scan_assets(
     results.push({ file: spec.file, status, observed, details, })
   }
 
-  let entries = @fs.readdir(asset_dir, sort=true)
   for name in entries {
     if name.has_suffix(".png") {
       let mut expected = false
@@ -227,6 +227,16 @@ pub async fn scan_assets(
     }
   }
   { asset_dir, checked: results.length(), passed, failed, results, }
+}
+
+///|
+fn contains_entry(entries : Array[String], expected : String) -> Bool {
+  for entry in entries {
+    if entry == expected {
+      return true
+    }
+  }
+  false
 }
 
 ///|
