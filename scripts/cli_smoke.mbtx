@@ -34,14 +34,20 @@ async fn main {
   }
 
   let corrupt_png_dir = "_build/cli-smoke/png-crc"
-  @fs.mkdir("\{corrupt_png_dir}/assets", recursive=true)
+  if !@fs.exists("\{corrupt_png_dir}/assets") {
+    @fs.mkdir("\{corrupt_png_dir}/assets", recursive=true)
+  }
   @fs.write_file(
     "\{corrupt_png_dir}/assets/corrupt.png",
     b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x08\x06\x00\x00\x00\xB4\xF4\xAE\xC7",
   )
   @fs.write_file(
+    "\{corrupt_png_dir}/assets/invalid-fields.png",
+    b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x07\x06\x00\x00\x00\x36\xA4\x39\x17",
+  )
+  @fs.write_file(
     "\{corrupt_png_dir}/media-pack.json",
-    "{\"assets\":[{\"file\":\"corrupt.png\",\"width\":4,\"height\":3,\"max_bytes\":100}]}",
+    "{\"assets\":[{\"file\":\"corrupt.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"invalid-fields.png\",\"width\":4,\"height\":3,\"max_bytes\":100}]}",
   )
   let corrupt_png = @shell.Cmd("moon", [
     "run",
@@ -56,14 +62,16 @@ async fn main {
   ]).output()
   if corrupt_png.exit_code() != 1 {
     raise Failure::Failure(
-      "a PNG with a corrupted IHDR checksum should return 1, got {corrupt_png.exit_code()}",
+      "invalid PNG IHDR data should return 1, got {corrupt_png.exit_code()}",
     )
   }
   let corrupt_png_json = @fs.read_file("\{corrupt_png_dir}/report/report.json").text()
-  if !corrupt_png_json.contains("\"failed\": 1") ||
-    !corrupt_png_json.contains("PNG 文件头无效或不完整") {
+  if !corrupt_png_json.contains("\"failed\": 2") ||
+    !corrupt_png_json.contains("PNG 文件头无效或不完整") ||
+    !corrupt_png_json.contains("corrupt.png") ||
+    !corrupt_png_json.contains("invalid-fields.png") {
     raise Failure::Failure(
-      "a PNG with a corrupted IHDR checksum should be reported as invalid",
+      "corrupted checksum and invalid IHDR fields should be reported",
     )
   }
 
@@ -184,6 +192,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, bad PNG checksum=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, invalid PNG IHDR=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }

@@ -51,6 +51,15 @@ pub fn png_dimensions(bytes : Bytes) -> (Int, Int)? {
   if !png_ihdr_crc_is_valid(bytes) {
     return None
   }
+  if !png_ihdr_fields_are_valid(
+      bytes[24].to_int(),
+      bytes[25].to_int(),
+      bytes[26].to_int(),
+      bytes[27].to_int(),
+      bytes[28].to_int(),
+    ) {
+    return None
+  }
 
   let width = read_png_dimension(bytes, 16)
   let height = read_png_dimension(bytes, 20)
@@ -85,6 +94,33 @@ fn png_crc32(bytes : Bytes, start : Int, end : Int) -> Int {
     }
   }
   crc ^ -1
+}
+
+///|
+/// Check the combinations defined by the PNG IHDR specification.
+fn png_ihdr_fields_are_valid(
+  bit_depth : Int,
+  color_type : Int,
+  compression_method : Int,
+  filter_method : Int,
+  interlace_method : Int,
+) -> Bool {
+  let valid_bit_depth = match color_type {
+    0 =>
+      bit_depth == 1 ||
+      bit_depth == 2 ||
+      bit_depth == 4 ||
+      bit_depth == 8 ||
+      bit_depth == 16
+    2 => bit_depth == 8 || bit_depth == 16
+    3 => bit_depth == 1 || bit_depth == 2 || bit_depth == 4 || bit_depth == 8
+    4 | 6 => bit_depth == 8 || bit_depth == 16
+    _ => false
+  }
+  valid_bit_depth &&
+  compression_method == 0 &&
+  filter_method == 0 &&
+  (interlace_method == 0 || interlace_method == 1)
 }
 
 ///|

@@ -8,6 +8,23 @@ test "PNG CRC-32 matches the standard check vector" {
 }
 
 ///|
+test "PNG IHDR accepts only specified field combinations" {
+  assert_true(png_ihdr_fields_are_valid(1, 0, 0, 0, 0))
+  assert_true(png_ihdr_fields_are_valid(16, 0, 0, 0, 1))
+  assert_true(png_ihdr_fields_are_valid(8, 2, 0, 0, 0))
+  assert_true(png_ihdr_fields_are_valid(16, 2, 0, 0, 0))
+  assert_true(png_ihdr_fields_are_valid(4, 3, 0, 0, 0))
+  assert_true(png_ihdr_fields_are_valid(8, 4, 0, 0, 0))
+  assert_true(png_ihdr_fields_are_valid(16, 6, 0, 0, 1))
+  assert_true(!png_ihdr_fields_are_valid(7, 6, 0, 0, 0))
+  assert_true(!png_ihdr_fields_are_valid(16, 3, 0, 0, 0))
+  assert_true(!png_ihdr_fields_are_valid(8, 1, 0, 0, 0))
+  assert_true(!png_ihdr_fields_are_valid(8, 6, 1, 0, 0))
+  assert_true(!png_ihdr_fields_are_valid(8, 6, 0, 1, 0))
+  assert_true(!png_ihdr_fields_are_valid(8, 6, 0, 0, 2))
+}
+
+///|
 test "accepts nested relative asset paths and rejects traversal" {
   assert_true(is_safe_asset_path("social/cover.jpeg"))
   assert_true(is_safe_asset_path("poster.png"))
