@@ -21,6 +21,5 @@ moon test --target native        # 3 passed
 moon run --target native scripts/cli_smoke.mbtx
 ```
 
-本记录截至本地验证完成时编写；GitHub Actions 结果以本轮推送后页面显示为准。
-
 - 首次推送后的 [GitHub Actions 运行](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35186539702) 全部通过；Actions 提示 `checkout@v4` 使用的 Node 20 运行时正在弃用，因此将 workflow 更新为官方 `actions/checkout@v7`。更新后的 workflow 随后再次运行验证。
+- 更新后的 [GitHub Actions 运行](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35186658315) 也全部通过，包括格式、无警告检查、测试和 CLI 端到端回归。
