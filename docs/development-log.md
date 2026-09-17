@@ -164,3 +164,4 @@ Windows 本机 `moon fmt --check` 与 `moon fmt --check scripts/cli_smoke.mbtx`�
 - 新增空白试用流程，要求记录真实场景、规格来源、已知预期、命令与版本、耗时、人工核实、误报/漏报及反馈；允许脱敏后再公开。
 - 明确受控的清单错误测试与合成 fixture 不能替代真实试用，也不能仅凭一次未发现问题就推断工具没有漏报。
 - 目前仍无外部用户或真实素材试用记录；模板是待办工具，不是试用结果。
+- 提交 `2ff0fe1` 的 [GitHub Actions 运行 #35230002092](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35230002092) 中 Ubuntu 和 Windows jobs 均通过格式检查、无警告检查、20 项原生测试及 CLI smoke。
