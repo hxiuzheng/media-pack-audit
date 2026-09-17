@@ -78,4 +78,4 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 新增两个端到端错误输入场景，分别把目录作为清单、把文件作为素材目录，断言退出码与用户提示。
 - 本轮由 Codex 辅助实现；没有改变素材点检范围，也没有外部用户试用记录。
 
-Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（10 passed）和 CLI smoke。远端 CI 待推送后验证。
+Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native`（10 passed）和 CLI smoke。功能提交 `2a8ce2a` 的 [GitHub Actions 运行 #35212045289](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35212045289) 中 Ubuntu 与 Windows job 均通过。
