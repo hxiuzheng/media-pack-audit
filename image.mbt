@@ -73,27 +73,55 @@ pub fn png_dimensions(bytes : Bytes) -> (Int, Int)? {
 /// Validate the CRC for the first PNG chunk (IHDR), without decoding image data.
 fn png_ihdr_crc_is_valid(bytes : Bytes) -> Bool {
   let crc = png_crc32(bytes, 12, 29)
-  bytes[29].to_int() == ((crc >> 24) & 0xFF) &&
-  bytes[30].to_int() == ((crc >> 16) & 0xFF) &&
-  bytes[31].to_int() == ((crc >> 8) & 0xFF) &&
-  bytes[32].to_int() == (crc & 0xFF)
+  png_crc_matches(crc, bytes, 29)
 }
 
 ///|
 /// CRC-32/ISO-HDLC as used by PNG chunks.
 fn png_crc32(bytes : Bytes, start : Int, end : Int) -> Int {
-  let mut crc = -1
+  png_crc32_update(-1, bytes, start, end) ^ -1
+}
+
+///|
+fn png_crc32_update(crc : Int, bytes : Bytes, start : Int, end : Int) -> Int {
+  let mut result = crc
   for index in start..<end {
-    crc = crc ^ bytes[index].to_int()
-    for _ in 0..<8 {
-      if (crc & 1) == 1 {
-        crc = ((crc >> 1) & 0x7FFFFFFF) ^ 0xEDB88320
-      } else {
-        crc = (crc >> 1) & 0x7FFFFFFF
-      }
-    }
+    result = result ^ bytes[index].to_int()
+    result = ((result >> 4) & 0x0FFFFFFF) ^ png_crc32_nibble(result & 0x0F)
+    result = ((result >> 4) & 0x0FFFFFFF) ^ png_crc32_nibble(result & 0x0F)
   }
-  crc ^ -1
+  result
+}
+
+///|
+fn png_crc32_nibble(nibble : Int) -> Int {
+  match nibble {
+    0 => 0x00000000
+    1 => 0x1DB71064
+    2 => 0x3B6E20C8
+    3 => 0x26D930AC
+    4 => 0x76DC4190
+    5 => 0x6B6B51F4
+    6 => 0x4DB26158
+    7 => 0x5005713C
+    8 => 0xEDB88320
+    9 => 0xF00F9344
+    10 => 0xD6D6A3E8
+    11 => 0xCB61B38C
+    12 => 0x9B64C2B0
+    13 => 0x86D3D2D4
+    14 => 0xA00AE278
+    15 => 0xBDBDF21C
+    _ => 0
+  }
+}
+
+///|
+fn png_crc_matches(crc : Int, bytes : Bytes, offset : Int) -> Bool {
+  bytes[offset].to_int() == ((crc >> 24) & 0xFF) &&
+  bytes[offset + 1].to_int() == ((crc >> 16) & 0xFF) &&
+  bytes[offset + 2].to_int() == ((crc >> 8) & 0xFF) &&
+  bytes[offset + 3].to_int() == (crc & 0xFF)
 }
 
 ///|
@@ -266,8 +294,129 @@ async fn read_png_dimensions(path : String, size : Int64) -> (Int, Int)? {
   }
   let file = @fs.open(path, mode=@fs.ReadOnly)
   defer file.close()
-  let header = file.read_exactly(33)
-  png_dimensions(header)
+  let header = file.read_exactly_at(33, position=0L)
+  match png_dimensions(header) {
+    Some(dimensions) => {
+      let complete = png_chunks_are_valid(file, size) catch { _ => false }
+      if complete {
+        Some(dimensions)
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+/// Check PNG chunk framing and CRCs without decompressing image data.
+async fn png_chunks_are_valid(file : @fs.File, size : Int64) -> Bool {
+  if size < 8L {
+    return false
+  }
+  let signature = file.read_exactly_at(8, position=0L)
+  if !signature.has_prefix(b"\x89PNG\r\n\x1A\n") {
+    return false
+  }
+
+  let mut offset = 8L
+  let mut chunk_index = 0
+  let mut has_idat = false
+  let mut idat_sequence_ended = false
+  while offset < size {
+    if size - offset < 12L {
+      return false
+    }
+    let header = file.read_exactly_at(8, position=offset)
+    let length = read_png_chunk_length(header)
+    if length > 2_147_483_647L || length > size - offset - 12L {
+      return false
+    }
+    if !is_png_chunk_type(header, 4) {
+      return false
+    }
+
+    let is_ihdr = png_chunk_type_is(header, b"IHDR")
+    let is_idat = png_chunk_type_is(header, b"IDAT")
+    let is_iend = png_chunk_type_is(header, b"IEND")
+    if chunk_index == 0 {
+      if !is_ihdr || length != 13L {
+        return false
+      }
+    } else if is_ihdr {
+      return false
+    }
+    if is_idat {
+      if idat_sequence_ended {
+        return false
+      }
+      has_idat = true
+    } else if has_idat && !is_iend {
+      idat_sequence_ended = true
+    }
+    if is_iend && (!has_idat || length != 0L) {
+      return false
+    }
+
+    let mut crc = png_crc32_update(-1, header, 4, 8)
+    let data_start = offset + 8L
+    let data_end = data_start + length
+    let mut data_offset = data_start
+    while data_offset < data_end {
+      let remaining = data_end - data_offset
+      let block_size = if remaining > 65_536L {
+        65_536
+      } else {
+        Int64::to_int(remaining)
+      }
+      let block = file.read_exactly_at(block_size, position=data_offset)
+      crc = png_crc32_update(crc, block, 0, block.length())
+      data_offset += Int::to_int64(block_size)
+    }
+    crc = crc ^ -1
+    let stored_crc = file.read_exactly_at(4, position=data_end)
+    if !png_crc_matches(crc, stored_crc, 0) {
+      return false
+    }
+
+    offset = data_end + 4L
+    chunk_index += 1
+    if is_iend {
+      return offset == size
+    }
+  }
+  false
+}
+
+///|
+fn read_png_chunk_length(bytes : Bytes) -> Int64 {
+  Int::to_int64(bytes[0].to_int()) * 16_777_216L +
+  Int::to_int64(bytes[1].to_int()) * 65_536L +
+  Int::to_int64(bytes[2].to_int()) * 256L +
+  Int::to_int64(bytes[3].to_int())
+}
+
+///|
+fn is_png_chunk_type(bytes : Bytes, offset : Int) -> Bool {
+  for index in offset..<(offset + 4) {
+    let value = bytes[index].to_int()
+    let is_uppercase = value >= b'A'.to_int() && value <= b'Z'.to_int()
+    let is_lowercase = value >= b'a'.to_int() && value <= b'z'.to_int()
+    if !is_uppercase && !is_lowercase {
+      return false
+    }
+  }
+  // The reserved bit (bit 5 of the third type byte) must be zero.
+  bytes[offset + 2].to_int() >= b'A'.to_int() &&
+  bytes[offset + 2].to_int() <= b'Z'.to_int()
+}
+
+///|
+fn png_chunk_type_is(bytes : Bytes, name : Bytes) -> Bool {
+  bytes[4] == name[0] &&
+  bytes[5] == name[1] &&
+  bytes[6] == name[2] &&
+  bytes[7] == name[3]
 }
 
 ///|
@@ -422,7 +571,8 @@ pub async fn scan_assets(
       None => {
         issues.push(
           match format {
-            RasterFormat::Png => "PNG 文件头无效或不完整"
+            RasterFormat::Png =>
+              "PNG 结构无效、不完整或 CRC 校验失败"
             RasterFormat::Jpeg =>
               "JPEG 文件头无效、不完整或 SOF 超出 4 MiB 扫描范围"
             RasterFormat::Gif =>

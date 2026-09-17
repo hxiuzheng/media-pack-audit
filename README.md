@@ -11,13 +11,13 @@
 ## 能做什么
 
 - 按清单递归检查素材目录中的相对路径是否存在、是否为普通文件；额外图片也会报告其相对路径。
-- 读取 PNG IHDR、JPEG SOF 与 GIF 逻辑屏幕尺寸核对像素宽高；PNG 还会校验 IHDR CRC 和标准规定的位深/颜色类型/方法组合；不解码图像。
+- 读取 PNG IHDR、JPEG SOF 与 GIF 逻辑屏幕尺寸核对像素宽高；PNG 会校验 IHDR 字段、逐块 CRC 和基本容器结构；不解码图像。
 - 检查文件大小上限，并报告目录中的额外 PNG/JPEG/GIF。
 - 检查清单中的重复文件名、不安全路径和无效规格。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
-当前版本递归检查素材目录中的 PNG、JPEG 和 GIF；扩展名接受 `.png`、`.jpg`、`.jpeg`、`.gif`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF 或 GIF 逻辑屏幕描述符；PNG 会校验 IHDR CRC、标准规定的位深与颜色类型组合，以及压缩、过滤和交错方法值，但不会校验后续 PNG 块的 CRC 或完整压缩图像数据；这些 IHDR 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。JPEG 元数据扫描最多读取文件开头 4 MiB。GIF 只检查画布宽高，不读取帧数或动画时序。工具不会解码像素，也不检查色彩配置、透明边缘或视觉内容。它用于交付预检，不替代完整图像解码器和人工视觉验收。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
+当前版本递归检查素材目录中的 PNG、JPEG 和 GIF；扩展名接受 `.png`、`.jpg`、`.jpeg`、`.gif`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF 或 GIF 逻辑屏幕描述符。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。JPEG 元数据扫描最多读取文件开头 4 MiB。GIF 只检查画布宽高，不读取帧数或动画时序。工具也不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
 
 ## 快速开始
 
@@ -37,7 +37,7 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过、损坏 CRC 或非法字段的 PNG IHDR、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
+运行 CLI 端到端回归（通过、非法 PNG IHDR 字段、缺失块、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx

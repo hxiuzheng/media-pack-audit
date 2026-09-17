@@ -10,7 +10,7 @@
 | 项目简介 / 一页选题说明 | [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md) | 草案已备；提交前须由参赛者补充真实场景并审阅 |
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/demo` | 已满足；本机按命令演示 |
-| 必要测试 | PNG/JPEG/GIF 尺寸头测试；PNG CRC 标准向量、IHDR 合法字段组合及损坏头拒绝测试；CLI smoke 覆盖递归、路径越界、通过/失败报告、大小写不一致、无效/缺失/类型错误输入及输出路径冲突 | 已覆盖当前功能范围；继续按新增行为补测 |
+| 必要测试 | PNG/JPEG/GIF 尺寸测试；PNG CRC 标准向量、IHDR 字段组合、header-only 截断和 IDAT CRC 损坏测试；CLI smoke 覆盖递归、路径越界、通过/失败报告、大小写不一致及各类无效输入 | 已覆盖当前功能范围；继续按新增行为补测 |
 | 跨平台 CI | [GitHub Actions 运行 #35213747460](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35213747460)：PNG IHDR 字段改动后的 Ubuntu job 成功；Windows job 尚在运行，待完成后复核 | 部分完成 |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
@@ -22,7 +22,7 @@
 - 按官方要求加入赛事交流群，并留意资格审核与后续通知。
 - 把“数字媒体素材交付规格预检”方向发给组织方，确认选题和工作范围适合本期赛事。对三个已检查项目的领域区分见 [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md)，不能据此保证与所有参赛者都不重叠。
 - 用自己熟悉的真实素材交付场景试跑；记录素材来源、发现的问题和使用者反馈。当前仓库只有合成 fixture，不能声称已完成真实用户试用。
-- 亲自从干净环境跟 README 重跑示例与测试，并准备现场讲解清单字段、PNG IHDR / JPEG SOF / GIF 逻辑屏幕尺寸限制、相对路径安全策略、扩展名与路径大小写处理和报告边界。
+- 亲自从干净环境跟 README 重跑示例与测试，并准备现场讲解清单字段、PNG chunk CRC 与不解压 IDAT 的边界、JPEG SOF / GIF 逻辑屏幕尺寸限制、相对路径安全策略、扩展名与路径大小写处理和报告边界。
 
 ## 建议演示
 

@@ -46,8 +46,16 @@ async fn main {
     b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x07\x06\x00\x00\x00\x36\xA4\x39\x17",
   )
   @fs.write_file(
+    "\{corrupt_png_dir}/assets/header-only.png",
+    b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x08\x06\x00\x00\x00\xB4\xF4\xAE\xC6",
+  )
+  @fs.write_file(
+    "\{corrupt_png_dir}/assets/bad-idat-crc.png",
+    b"\x89PNG\r\n\x1A\n\x00\x00\x00\x0DIHDR\x00\x00\x00\x04\x00\x00\x00\x03\x08\x06\x00\x00\x00\xB4\xF4\xAE\xC6\x00\x00\x00\x12IDAT\x78\x9C\x63\x50\x8E\x9E\xF6\x1F\x19\x33\x10\x14\x00\x00\x6A\x2D\x18\xE5\x90\xC0\xD8\xA4\x00\x00\x00\x00IEND\xAE\x42\x60\x82",
+  )
+  @fs.write_file(
     "\{corrupt_png_dir}/media-pack.json",
-    "{\"assets\":[{\"file\":\"corrupt.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"invalid-fields.png\",\"width\":4,\"height\":3,\"max_bytes\":100}]}",
+    "{\"assets\":[{\"file\":\"corrupt.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"invalid-fields.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"header-only.png\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"bad-idat-crc.png\",\"width\":4,\"height\":3,\"max_bytes\":100}]}",
   )
   let corrupt_png = @shell.Cmd("moon", [
     "run",
@@ -66,12 +74,16 @@ async fn main {
     )
   }
   let corrupt_png_json = @fs.read_file("\{corrupt_png_dir}/report/report.json").text()
-  if !corrupt_png_json.contains("\"failed\": 2") ||
-    !corrupt_png_json.contains("PNG 文件头无效或不完整") ||
+  if !corrupt_png_json.contains("\"failed\": 4") ||
+    !corrupt_png_json.contains(
+      "PNG 结构无效、不完整或 CRC 校验失败",
+    ) ||
     !corrupt_png_json.contains("corrupt.png") ||
-    !corrupt_png_json.contains("invalid-fields.png") {
+    !corrupt_png_json.contains("invalid-fields.png") ||
+    !corrupt_png_json.contains("header-only.png") ||
+    !corrupt_png_json.contains("bad-idat-crc.png") {
     raise Failure::Failure(
-      "corrupted checksum and invalid IHDR fields should be reported",
+      "invalid IHDR, missing chunks, and a bad IDAT CRC should be reported",
     )
   }
 
@@ -192,6 +204,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, invalid PNG IHDR=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, invalid/corrupt PNG=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
