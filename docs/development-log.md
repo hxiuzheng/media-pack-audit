@@ -7,7 +7,7 @@
 - 实测发现：素材项同时包含正确的 `max_bytes` 和拼错的 `max_byts` 时，JSON 派生解析器会忽略未知键并返回通过，容易让规格约束静默失效。
 - CLI 现在只接受根级 `assets` 和素材项 `file`、`width`、`height`、`max_bytes` 四个字段；未知字段在扫描素材前以具体路径报错。
 - 新增根级拼写错误与素材项拼写错误两个清单 fixture；端到端 smoke 断言二者返回非零且不生成报告，防止误呈现为通过。
-- README、项目简介和初审测试项已同步说明严格字段行为。本机格式、无警告检查、20 项测试及 CLI smoke 通过；跨平台 CI 待验证。
+- README、项目简介和初审测试项已同步说明严格字段行为。本机格式、无警告检查、20 项测试及 CLI smoke 通过；提交 `fea1a19` 的 [GitHub Actions 运行 #35234757940](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35234757940) 中 Ubuntu、Windows jobs 均通过格式、无警告检查、20 项原生测试及包含未知字段拒绝的 CLI smoke。
 - 回归只使用合成素材；尚无真实用户试用或外部反馈。
 
 ## 2026-09-17：在报告中固定所用规格清单
