@@ -90,6 +90,8 @@ Start-Process .\report\report.html
 
 参赛项目简介和初审准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。项目代码公开不代表已完成赛事报名或资格审核。
 
+真实素材试用尚未完成；空白记录格式见 [试用记录模板](docs/real-use-trial-template.md)。合成样例和人为制造的错误不代替真实用户试用。
+
 ## AI 协作说明
 
 开发过程中使用 Codex 辅助代码实现、MoonBit API 查询、测试和文档整理。参赛者需要逐项复核改动、理解实现并对最终提交负责；尚未理解的代码应先验证和学习，再作为参赛成果进行说明。

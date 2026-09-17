@@ -158,3 +158,9 @@ Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon c
 - SHA-256 相同表示指纹相同，不作来源认证，也不自动删除、改写或判定图片视觉内容相同。
 
 Windows 本机 `moon fmt --check` 与 `moon fmt --check scripts/cli_smoke.mbtx`、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 20 passed，CLI smoke 通过，包含清单内重复图片保持通过及额外图片命中已登记内容。提交 `0659816` 的 [GitHub Actions 运行 #35228552433](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35228552433) 中 Ubuntu 与 Windows jobs 均通过格式检查、无警告检查、20 项原生测试及 CLI smoke。
+
+## 2026-09-17：准备真实素材试用记录模板
+
+- 新增空白试用流程，要求记录真实场景、规格来源、已知预期、命令与版本、耗时、人工核实、误报/漏报及反馈；允许脱敏后再公开。
+- 明确受控的清单错误测试与合成 fixture 不能替代真实试用，也不能仅凭一次未发现问题就推断工具没有漏报。
+- 目前仍无外部用户或真实素材试用记录；模板是待办工具，不是试用结果。

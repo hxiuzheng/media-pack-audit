@@ -22,4 +22,4 @@
 
 截至 2026-09-17，已核对的三个参考项目方向分别是 [KubeMoon](https://github.com/cxh04/KubeMoon) 的 Kubernetes 客户端与 Controller Runtime、[Moon-NATS-Link](https://github.com/python123-ops/Moon-NATS-Link) 的 NATS 协议客户端，以及 [moonagentcheck](https://github.com/2515050242/moonagentcheck) 的 Agent 工具行为契约测试。片盒点检处理数字媒体文件交付规格，问题域与这三者不同。该对比不代表已穷尽所有参赛项目；正式选题仍需请赛事组织方确认。
 
-> 本简介依据公开仓库当前实现整理，不代表已报名、已通过资格审核或已有外部用户试用。提交前请申请人补充本人真实遇到的交付场景，并确认能够独立讲解项目。
+> 本简介依据公开仓库当前实现整理，不代表已报名、已通过资格审核或已有外部用户试用。提交前请申请人补充本人真实遇到的交付场景，并确认能够独立讲解项目。真实素材试用尚未完成，记录方式见 [真实素材试用记录模板](docs/real-use-trial-template.md)。
