@@ -140,3 +140,13 @@ Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon c
 - 本轮更新的是可复现演示，不代表已取得真实用户试用反馈。
 
 Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 连续两次通过；公开失败演示报告 5 项待处理并以预期退出码 1 结束。提交 `169fbc4` 的 [GitHub Actions 运行 #35221569664](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35221569664) 中 Ubuntu 与 Windows jobs 均成功。
+
+## 2026-09-17：增加 WebP 尺寸与 RIFF 容器预检
+
+- 新增 `.webp` 清单与目录扫描：读取有损 VP8、无损 VP8L 的图像尺寸，以及扩展 VP8X 的画布尺寸；对动画 WebP 的尺寸只报告画布，不解析动画帧。
+- 校验 RIFF 声明文件长度、块边界、奇数长度块的零填充和必要的图像数据块；拒绝只有 VP8X 画布头、没有图像数据块的文件。不解码 VP8/VP8L 位流，也不等于完整 WebP 解码器。
+- 格式字段按 [Google WebP 容器规范](https://developers.google.com/speed/webp/docs/riff_container)、[WebP Lossless Bitstream 规范](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification) 和 [RFC 6386 VP8 规范](https://datatracker.ietf.org/doc/html/rfc6386)实现。
+- 增加 VP8、VP8L、VP8X 头单测；clean 示例新增三种编码形式的 WebP 夹具，demo 新增一项多余 WebP。夹具由 Pillow/libwebp 从仓库内合成 PNG/JPEG 导出，Pillow 解码校验和 CLI 全流程分别验证。
+- 本轮由 Codex 辅助实现；新增图片均为合成夹具，未完成真实用户试用。
+
+Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 19 passed；CLI smoke 连续两次通过，含通过样例 WebP SHA-256、真实 WebP 清单检查、缺少图像数据的 VP8X 拒绝及非零 RIFF 填充拒绝。推送后复核 Ubuntu 与 Windows CI。

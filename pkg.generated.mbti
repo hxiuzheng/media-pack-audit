@@ -18,6 +18,8 @@ pub fn render_html(AuditReport) -> String
 
 pub async fn scan_assets(String, Manifest) -> AuditReport
 
+pub fn webp_dimensions(Bytes, Int64) -> (Int, Int)?
+
 // Errors
 
 // Types and methods

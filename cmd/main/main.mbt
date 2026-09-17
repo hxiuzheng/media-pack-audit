@@ -14,7 +14,7 @@ async fn main {
       ),
       @argparse.PositionArg(
         "assets",
-        about="Directory tree containing the delivered PNG/JPEG/GIF images",
+        about="Directory tree containing the delivered PNG/JPEG/WebP/GIF images",
         num_args=@argparse.ValueRange::single(),
       ),
     ],

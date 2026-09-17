@@ -475,6 +475,7 @@ async fn read_gif_dimensions(path : String, size : Int64) -> (Int, Int)? {
 priv enum RasterFormat {
   Png
   Jpeg
+  Webp
   Gif
 }
 
@@ -485,6 +486,8 @@ fn raster_format(name : String) -> RasterFormat? {
     Some(RasterFormat::Png)
   } else if lower_name.has_suffix(".jpg") || lower_name.has_suffix(".jpeg") {
     Some(RasterFormat::Jpeg)
+  } else if lower_name.has_suffix(".webp") {
+    Some(RasterFormat::Webp)
   } else if lower_name.has_suffix(".gif") {
     Some(RasterFormat::Gif)
   } else {
@@ -558,7 +561,7 @@ pub async fn scan_assets(
           status: "FAIL",
           observed: "不支持的格式",
           sha256: "—",
-          details: "当前版本只检查 PNG、JPEG 和 GIF 图片",
+          details: "当前版本只检查 PNG、JPEG、WebP 和 GIF 图片",
         })
         continue
       }
@@ -612,6 +615,7 @@ pub async fn scan_assets(
     let dimensions = match format {
       RasterFormat::Png => read_png_dimensions(path, size)
       RasterFormat::Jpeg => read_jpeg_dimensions(path, size)
+      RasterFormat::Webp => read_webp_dimensions(path, size)
       RasterFormat::Gif => read_gif_dimensions(path, size)
     }
     let observed = match dimensions {
@@ -623,6 +627,8 @@ pub async fn scan_assets(
               "PNG 结构无效、不完整或 CRC 校验失败"
             RasterFormat::Jpeg =>
               "JPEG 文件头无效、不完整或 SOF 超出 4 MiB 扫描范围"
+            RasterFormat::Webp =>
+              "WebP RIFF 结构无效、不完整或尺寸头错误"
             RasterFormat::Gif =>
               "GIF 文件头无效、不完整或尺寸为零"
           },

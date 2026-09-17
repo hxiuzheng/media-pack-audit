@@ -1,6 +1,6 @@
 # 片盒点检 · MediaPack Audit
 
-**面向数字媒体素材交付的轻量级预检 CLI。** 它读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/GIF 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。
+**面向数字媒体素材交付的轻量级预检 CLI。** 它读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/WebP/GIF 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。
 
 > MoonBit Lang Hackathon 2026 项目方向：用 MoonBit 构建一个可复现的数字媒体工作流小工具。核心聚焦在“素材包验收”，不做图像编辑器、素材生成器或通用文件管理器。
 
@@ -11,15 +11,15 @@
 ## 能做什么
 
 - 按清单递归检查素材目录中的相对路径是否存在、是否为普通文件；额外图片也会报告其相对路径。
-- 读取 PNG IHDR、JPEG SOF 与 GIF 逻辑屏幕尺寸核对像素宽高；PNG 会校验 IHDR 字段、逐块 CRC 和基本容器结构；不解码图像。
-- 检查文件大小上限，并报告目录中的额外 PNG/JPEG/GIF。
+- 读取 PNG IHDR、JPEG SOF、WebP VP8/VP8L/VP8X 头与 GIF 逻辑屏幕尺寸核对像素宽高；PNG 会校验 IHDR 字段、逐块 CRC 和基本容器结构，WebP 会检查 RIFF 长度、块边界和奇数字节填充；不解码图像。
+- 检查文件大小上限，并报告目录中的额外 PNG/JPEG/WebP/GIF。
 - 当尺寸或文件大小不符合清单时，报告会同时写出要求值和实际值，方便直接定位该改哪项素材。
-- 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/GIF 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。超过清单大小上限的文件会跳过哈希；PNG 的结构与 CRC 检查仍会扫描完整文件。
+- 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/WebP/GIF 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。超过清单大小上限的文件会跳过哈希；PNG CRC/结构检查和 WebP RIFF 块边界检查仍会执行。
 - 检查清单中的重复文件名、不安全路径和无效规格。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
-当前版本递归检查素材目录中的 PNG、JPEG 和 GIF；扩展名接受 `.png`、`.jpg`、`.jpeg`、`.gif`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF 或 GIF 逻辑屏幕描述符。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。JPEG 元数据扫描最多读取文件开头 4 MiB。GIF 只检查画布宽高，不读取帧数或动画时序。对于未超过 `max_bytes` 的受支持图片，工具会以 64 KiB 缓冲区读取完整文件并记录 SHA-256；这可能需要比读取尺寸头更长的时间。超限文件显示 `—`，表示未计算哈希，但 PNG CRC 与结构检查仍会流式读取整个 PNG。SHA-256 依赖固定版本 `moonbitlang/x@0.5.5` 的 [crypto 包](https://github.com/moonbitlang/x/tree/main/crypto)；该模块属于实验性包，项目锁定版本并只用其哈希功能。指纹仅用于内容比对，不是来源认证或数字签名。工具不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
+当前版本递归检查素材目录中的 PNG、JPEG、WebP 和 GIF；扩展名接受 `.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF、WebP 的 VP8/VP8L 头或 VP8X 画布字段、GIF 逻辑屏幕描述符。WebP 检查 RIFF 声明长度、块边界、必需的图像数据块和零填充，但不解析完整扩展元数据语义或动画帧数据。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。WebP 字段依据 [Google WebP 容器规范](https://developers.google.com/speed/webp/docs/riff_container)、[VP8 数据格式规范（RFC 6386）](https://datatracker.ietf.org/doc/html/rfc6386) 与 [WebP Lossless Bitstream 规范](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification)。JPEG 元数据扫描最多读取文件开头 4 MiB。GIF 只检查画布宽高，不读取帧数或动画时序。对于未超过 `max_bytes` 的受支持图片，工具会以 64 KiB 缓冲区读取完整文件并记录 SHA-256；这可能需要比读取尺寸头更长的时间。超限文件显示 `—`，表示未计算哈希，但 PNG CRC 与结构检查仍会流式读取整个 PNG，WebP RIFF 检查仍会逐块读取块头和奇数长度填充字节。SHA-256 依赖固定版本 `moonbitlang/x@0.5.5` 的 [crypto 包](https://github.com/moonbitlang/x/tree/main/crypto)；该模块属于实验性包，项目锁定版本并只用其哈希功能。指纹仅用于内容比对，不是来源认证或数字签名。工具不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
 
 ## 快速开始
 
@@ -33,13 +33,13 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 
 命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。CLI 会先确认清单是文件、素材输入是目录；输入路径或清单有问题时给出错误并以非零状态退出。点检完成后，通过时退出码为 `0`；发现素材不合格时仍会先保存两种报告，再返回非零状态，适合接入 CI。
 
-仓库还附带一个使用合成图片的刻意错误样例：`poster.png` 的清单宽高和大小上限不匹配，缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG` 和 `exports/preview.GIF`。报告会展示清单要求值与检测值，并以退出码 `1` 结束，这是预期行为：
+仓库还附带一个使用合成图片的刻意错误样例：`poster.png` 的清单宽高和大小上限不匹配，缺少 `social/card.png`，并多出未登记的 `texture.png`、`exports/cover.JPG`、`exports/preview.GIF` 和 `exports/thumbnail.webp`。报告会展示清单要求值与检测值，并以退出码 `1` 结束，这是预期行为：
 
 ```sh
 moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output report-issues
 ```
 
-运行 CLI 端到端回归（通过并核对 SHA-256、跨 64 KiB 的哈希分块、超限时跳过哈希、尺寸与文件大小错误同时显示要求值和实际值、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
+运行 CLI 端到端回归（通过并核对 PNG/WebP 哈希、多种 WebP 头尺寸、无图像数据块的 VP8X 与非零 RIFF 填充拒绝、跨 64 KiB 的哈希分块、超限时跳过哈希、尺寸与文件大小错误同时显示要求值和实际值、非法 PNG IHDR、块长度越界、缺失 IEND、IEND 后尾随数据、IDAT CRC 错误、递归发现、路径越界拒绝、大小写不匹配、无效/缺失/类型错误输入、输出路径冲突）：
 
 ```sh
 moon run --target native scripts/cli_smoke.mbtx
@@ -58,6 +58,7 @@ Start-Process .\report\report.html
   "assets": [
     { "file": "poster.png", "width": 1920, "height": 1080, "max_bytes": 5000000 },
     { "file": "social/cover.jpeg", "width": 1200, "height": 630, "max_bytes": 2000000 },
+    { "file": "social/cover.webp", "width": 1200, "height": 630, "max_bytes": 2000000 },
     { "file": "motion/preview.gif", "width": 320, "height": 180, "max_bytes": 500000 },
     { "file": "social-card.png", "width": 1200, "height": 630, "max_bytes": 2000000 }
   ]
@@ -68,10 +69,10 @@ Start-Process .\report\report.html
 
 ## 项目结构
 
-- `image.mbt`：清单类型、PNG/JPEG/GIF 尺寸解析与素材点检逻辑。
+- `image.mbt`、`webp.mbt`：清单类型、PNG/JPEG/WebP/GIF 尺寸解析与素材点检逻辑。
 - `report.mbt`：HTML 报告及文本转义。
 - `cmd/main`：命令行入口与报告落盘。
-- `examples/demo`：可以直接运行的最小示例素材包。
+- `examples/demo`：可直接运行的多格式错误示例素材包（所有图片都是合成测试夹具）。
 - `examples/clean`：所有规格都通过的素材包。
 - `examples/case-mismatch`：验证跨平台文件名大小写一致性的样例。
 - `scripts/cli_smoke.mbtx`：端到端验证 CLI 的退出码和报告生成。

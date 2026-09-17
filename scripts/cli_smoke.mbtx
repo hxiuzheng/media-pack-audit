@@ -22,13 +22,20 @@ async fn main {
   }
   let clean_json = @fs.read_file("_build/cli-smoke/clean/report.json").text()
   let clean_html = @fs.read_file("_build/cli-smoke/clean/report.html").text()
-  if !clean_json.contains("\"passed\": 3") ||
+  if !clean_json.contains("\"passed\": 6") ||
     !clean_json.contains("\"failed\": 0") ||
     !clean_json.contains(
       "\"sha256\": \"d361eb5db86e8dd44c63d108e6505c7c235208b36936e90762a0701d4df4d139\"",
     ) ||
+    !clean_json.contains(
+      "\"sha256\": \"269b5d77bad50d9c9e36cbbaa2ab071bd67e948bdef3e39239e54c9bb5ca1152\"",
+    ) ||
     !clean_json.contains("social/cover.jpeg") ||
+    !clean_json.contains("social/icon.webp") ||
+    !clean_json.contains("social/photo.webp") ||
+    !clean_json.contains("social/profile.webp") ||
     !clean_json.contains("motion/preview.gif") ||
+    !clean_json.contains("4 × 3") ||
     !clean_json.contains("1200 × 630") ||
     !clean_html.contains("片盒点检") {
     raise Failure::Failure(
@@ -38,8 +45,53 @@ async fn main {
   if !clean_html.contains("SHA-256") ||
     !clean_html.contains(
       "d361eb5db86e8dd44c63d108e6505c7c235208b36936e90762a0701d4df4d139",
+    ) ||
+    !clean_html.contains(
+      "269b5d77bad50d9c9e36cbbaa2ab071bd67e948bdef3e39239e54c9bb5ca1152",
     ) {
     raise Failure::Failure("HTML report should expose the SHA-256 fingerprint")
+  }
+
+  let empty_webp_dir = "_build/cli-smoke/webp-empty"
+  if !@fs.exists("\{empty_webp_dir}/assets") {
+    @fs.mkdir("\{empty_webp_dir}/assets", recursive=true)
+  }
+  @fs.write_file(
+    "\{empty_webp_dir}/assets/header-only.webp",
+    b"RIFF\x16\x00\x00\x00WEBPVP8X\x0A\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x02\x00\x00\x00",
+  )
+  @fs.write_file(
+    "\{empty_webp_dir}/assets/bad-padding.webp",
+    b"RIFF\x12\x00\x00\x00WEBPVP8L\x05\x00\x00\x00\x2F\x03\x80\x00\x00\x01",
+  )
+  @fs.write_file(
+    "\{empty_webp_dir}/media-pack.json",
+    "{\"assets\":[{\"file\":\"header-only.webp\",\"width\":4,\"height\":3,\"max_bytes\":100},{\"file\":\"bad-padding.webp\",\"width\":4,\"height\":3,\"max_bytes\":100}]}",
+  )
+  let empty_webp = @shell.Cmd("moon", [
+    "run",
+    "--target",
+    "native",
+    "cmd/main",
+    "--",
+    "\{empty_webp_dir}/media-pack.json",
+    "\{empty_webp_dir}/assets",
+    "--output",
+    "\{empty_webp_dir}/report",
+  ]).output()
+  if empty_webp.exit_code() != 1 {
+    raise Failure::Failure(
+      "WebP without an image data chunk should fail, got \{empty_webp.exit_code()}",
+    )
+  }
+  let empty_webp_json = @fs.read_file("\{empty_webp_dir}/report/report.json").text()
+  if !empty_webp_json.contains(
+      "WebP RIFF 结构无效、不完整或尺寸头错误",
+    ) ||
+    !empty_webp_json.contains("bad-padding.webp") {
+    raise Failure::Failure(
+      "WebP without image data and WebP with nonzero padding should be rejected",
+    )
   }
 
   let mismatch_dir = "_build/cli-smoke/spec-mismatch"
@@ -175,14 +227,16 @@ async fn main {
   }
   let findings_json = @fs.read_file("_build/cli-smoke/findings/report.json").text()
   let findings_html = @fs.read_file("_build/cli-smoke/findings/report.html").text()
-  if !findings_json.contains("\"failed\": 5") ||
+  if !findings_json.contains("\"failed\": 6") ||
     !findings_json.contains("清单要求 5 × 9，实际 4 × 3") ||
     !findings_json.contains("超出上限 1 bytes") ||
     !findings_html.contains("清单要求 5 × 9，实际 4 × 3") ||
+    !findings_json.contains("thumbnail.webp") ||
+    !findings_json.contains("texture.png") ||
     !findings_json.contains("exports/cover.JPG") ||
     !findings_json.contains("exports/preview.GIF") {
     raise Failure::Failure(
-      "finding sample should show spec failures, one missing image and three extra images",
+      "finding sample should show spec failures, one missing image and four extra images",
     )
   }
 
@@ -281,6 +335,6 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, invalid/corrupt PNG boundaries=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
