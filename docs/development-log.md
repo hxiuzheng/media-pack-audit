@@ -149,4 +149,4 @@ Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon c
 - 增加 VP8、VP8L、VP8X 头单测；clean 示例新增三种编码形式的 WebP 夹具，demo 新增一项多余 WebP。夹具由 Pillow/libwebp 从仓库内合成 PNG/JPEG 导出，Pillow 解码校验和 CLI 全流程分别验证。
 - 本轮由 Codex 辅助实现；新增图片均为合成夹具，未完成真实用户试用。
 
-Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 19 passed；CLI smoke 连续两次通过，含通过样例 WebP SHA-256、真实 WebP 清单检查、缺少图像数据的 VP8X 拒绝及非零 RIFF 填充拒绝。推送后复核 Ubuntu 与 Windows CI。
+Windows 本机 `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 19 passed；CLI smoke 连续两次通过，含通过样例 WebP SHA-256、真实 WebP 清单检查、缺少图像数据的 VP8X 拒绝及非零 RIFF 填充拒绝。提交 `74cd3c5` 的 [GitHub Actions 运行 #35225659928](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35225659928) 中 Ubuntu 与 Windows jobs 均通过格式检查、无警告检查、原生测试及 CLI smoke。
