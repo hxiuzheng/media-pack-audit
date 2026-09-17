@@ -23,6 +23,7 @@ pub(all) struct CheckResult {
 ///|
 pub(all) struct AuditReport {
   asset_dir : String
+  manifest_sha256 : String
   checked : Int
   passed : Int
   failed : Int
@@ -312,6 +313,15 @@ async fn sha256_file(path : String, size : Int64) -> String? {
 }
 
 ///|
+/// Fingerprint the exact manifest bytes so a saved report can be tied to the
+/// specification file used for the audit.
+pub fn sha256_bytes(bytes : Bytes) -> String {
+  let hasher = @crypto.SHA256::new()
+  hasher.update(bytes)
+  @crypto.bytes_to_hex_string(hasher.finalize())
+}
+
+///|
 async fn read_png_dimensions(path : String, size : Int64) -> (Int, Int)? {
   if size < Int::to_int64(33) {
     return None
@@ -499,6 +509,7 @@ fn raster_format(name : String) -> RasterFormat? {
 pub async fn scan_assets(
   asset_dir : String,
   manifest : Manifest,
+  manifest_sha256 : String,
 ) -> AuditReport {
   let results : Array[CheckResult] = []
   let seen_files : Array[String] = []
@@ -710,5 +721,12 @@ pub async fn scan_assets(
       failed += 1
     }
   }
-  { asset_dir, checked: results.length(), passed, failed, results, }
+  {
+    asset_dir,
+    manifest_sha256,
+    checked: results.length(),
+    passed,
+    failed,
+    results,
+  }
 }

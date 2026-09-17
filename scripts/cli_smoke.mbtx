@@ -22,8 +22,12 @@ async fn main {
   }
   let clean_json = @fs.read_file("_build/cli-smoke/clean/report.json").text()
   let clean_html = @fs.read_file("_build/cli-smoke/clean/report.html").text()
+  let clean_output = clean.stdout() + clean.stderr()
   if !clean_json.contains("\"passed\": 6") ||
     !clean_json.contains("\"failed\": 0") ||
+    !clean_json.contains(
+      "\"manifest_sha256\": \"6a96ada338a297276f865c4749ed1ef9e4f947cfc94a0362cd02924047c96645\"",
+    ) ||
     !clean_json.contains(
       "\"sha256\": \"d361eb5db86e8dd44c63d108e6505c7c235208b36936e90762a0701d4df4d139\"",
     ) ||
@@ -40,6 +44,16 @@ async fn main {
     !clean_html.contains("片盒点检") {
     raise Failure::Failure(
       "clean report should include expected assets and the independently verified SHA-256",
+    )
+  }
+  if !clean_html.contains(
+      "6a96ada338a297276f865c4749ed1ef9e4f947cfc94a0362cd02924047c96645",
+    ) ||
+    !clean_output.contains(
+      "规格清单 SHA-256：6a96ada338a297276f865c4749ed1ef9e4f947cfc94a0362cd02924047c96645",
+    ) {
+    raise Failure::Failure(
+      "all report formats should fingerprint the exact manifest bytes",
     )
   }
   if !clean_html.contains("SHA-256") ||

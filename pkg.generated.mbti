@@ -16,7 +16,9 @@ pub fn png_dimensions(Bytes) -> (Int, Int)?
 
 pub fn render_html(AuditReport) -> String
 
-pub async fn scan_assets(String, Manifest) -> AuditReport
+pub async fn scan_assets(String, Manifest, String) -> AuditReport
+
+pub fn sha256_bytes(Bytes) -> String
 
 pub fn webp_dimensions(Bytes, Int64) -> (Int, Int)?
 
@@ -32,6 +34,7 @@ pub(all) struct AssetSpec {
 
 pub(all) struct AuditReport {
   asset_dir : String
+  manifest_sha256 : String
   checked : Int
   passed : Int
   failed : Int

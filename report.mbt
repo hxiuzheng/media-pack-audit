@@ -91,6 +91,11 @@ pub fn render_html(report : AuditReport) -> String {
   output <+
     #|</code></div>
   output <+
+    #|  <div class="path">规格清单 SHA-256：<code>
+  output.write_string(html_escape(report.manifest_sha256))
+  output <+
+    #|</code></div>
+  output <+
     #|  <section class="cards">
   output <+
     "    <div class=\"card\"><div class=\"label\">检查项</div><div class=\"number\">\{report.checked}</div></div>\n"
@@ -116,7 +121,7 @@ pub fn render_html(report : AuditReport) -> String {
   output <+
     #|  </table></div>
   output <+
-    #|  <footer>片盒点检只读素材并记录 SHA-256 内容指纹；指纹不代表来源认证，工具不会解码或修改图像。</footer>
+    #|  <footer>片盒点检只读素材并记录规格清单与素材的 SHA-256 内容指纹；指纹不代表来源认证，工具不会解码或修改图像。</footer>
   output <+
     #|</main></body></html>
   output.to_string()

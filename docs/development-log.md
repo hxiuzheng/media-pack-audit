@@ -2,6 +2,14 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-09-17：在报告中固定所用规格清单
+
+- JSON、HTML 报告和 CLI 摘要现在显示清单原始字节的 SHA-256；归档报告可以用该指纹对应回当时使用的规格文件，空格或换行变化也会产生不同指纹。
+- 增加 SHA-256 标准向量单测，并在端到端 smoke 中用独立计算的 `examples/clean/media-pack.json` 指纹，核对 JSON、HTML 和 CLI 三处输出完全一致。
+- 同步 README、项目简介和初审测试清单；明确指纹只是内容标识，不是来源认证或数字签名。
+- 本机 Windows 验证：`moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（20 passed）和 CLI smoke 全部通过。C 运行时依赖仍输出 `EINVAL` 宏重定义 warning；MoonBit 检查无警告且命令成功。
+- 新增回归使用仓库合成清单；尚未进行真实素材用户试用，也没有外部反馈。
+
 ## 2026-09-17：CLI 退出码、目录复用与端到端验证
 
 - CLI 现在在素材全部通过时返回 `0`；发现素材问题、缺失输入或无效清单时返回非零。检测报告会在发现素材问题时照常保存。

@@ -9,6 +9,10 @@ test "PNG CRC-32 matches the standard check vector" {
 
 ///|
 test "SHA-256 fingerprints match standard vectors across updates" {
+  assert_true(
+    sha256_bytes(b"abc") ==
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+  )
   let empty = @crypto.SHA256::new()
   assert_true(
     @crypto.bytes_to_hex_string(empty.finalize()) ==

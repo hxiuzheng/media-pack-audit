@@ -47,12 +47,14 @@ async fn main {
     raise Failure::Failure("素材目录路径必须是目录：\{assets_dir}")
   }
 
-  let manifest_text = @fs.read_file(manifest_path).text()
+  let manifest_data = @fs.read_file(manifest_path)
+  let manifest_text = manifest_data.text()
+  let manifest_sha256 = @audit.sha256_bytes(manifest_data.binary())
   let manifest : @audit.Manifest = @json.from_json(@json.parse(manifest_text)) catch {
     error => raise Failure::Failure("清单格式错误：\{error}")
   }
 
-  let report = @audit.scan_assets(assets_dir, manifest)
+  let report = @audit.scan_assets(assets_dir, manifest, manifest_sha256)
   if @fs.exists(output_dir) {
     if @fs.kind(output_dir, follow_symlink=false) != @fs.FileKind::Directory {
       raise Failure::Failure(
@@ -71,6 +73,7 @@ async fn main {
   println(
     "片盒点检完成：\{report.checked} 项，\{report.passed} 项通过，\{report.failed} 项需处理。",
   )
+  println("规格清单 SHA-256：\{report.manifest_sha256}")
   for result in report.results {
     println("[\{result.status}] \{result.file} — \{result.details}")
   }
