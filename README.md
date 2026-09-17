@@ -14,10 +14,11 @@
 - 读取 PNG IHDR、JPEG SOF、WebP VP8/VP8L/VP8X 头与 GIF 逻辑屏幕尺寸核对像素宽高；PNG 会校验 IHDR 字段、逐块 CRC 和基本容器结构，WebP 会检查 RIFF 长度、块边界和奇数字节填充；不解码图像。
 - 检查文件大小上限，并报告目录中的额外 PNG/JPEG/WebP/GIF。
 - 当尺寸或文件大小不符合清单时，报告会同时写出要求值和实际值，方便直接定位该改哪项素材。
+- 素材项可选填 `label`，用“课程主视觉”“微信公众号封面”等用途标注交付内容；HTML 与 JSON 报告保留该标签，HTML 会转义标签文本。
 - JSON、HTML 和 CLI 摘要会记录所用清单原始字节的 SHA-256，方便把归档报告对应回当时的规格文件；清单空格或换行变化也会改变指纹。清单与图片指纹都只是内容标识，不是来源认证或数字签名。
 - 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/WebP/GIF 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。相同指纹会提示潜在重复导出，仅供人工确认，不会判为失败。超过清单大小上限的文件会跳过哈希；PNG CRC/结构检查和 WebP RIFF 块边界检查仍会执行。
 - 检查清单中的重复文件名、不安全路径和无效规格，并提示同一素材包中 SHA-256 相同的潜在重复文件；提示不改变通过/失败状态。
-- 严格检查 JSON 清单字段：只接受顶层 `assets` 及素材项中的 `file`、`width`、`height`、`max_bytes`；拼错或暂不支持的字段会在检查前指出路径并拒绝运行，避免规格被静默忽略。
+- 严格检查 JSON 清单字段：只接受顶层 `assets` 及素材项中的 `file`、可选 `label`、`width`、`height`、`max_bytes`；拼错或暂不支持的字段会在检查前指出路径并拒绝运行，避免规格被静默忽略。
 - `width`、`height` 和 `max_bytes` 必须是整数；小数不会被截断成另一个看似有效的规格。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
@@ -71,7 +72,7 @@ Start-Process .\report\report.html
 ```json
 {
   "assets": [
-    { "file": "poster.png", "width": 1920, "height": 1080, "max_bytes": 5000000 },
+    { "file": "poster.png", "label": "课程主视觉", "width": 1920, "height": 1080, "max_bytes": 5000000 },
     { "file": "social/cover.jpeg", "width": 1200, "height": 630, "max_bytes": 2000000 },
     { "file": "social/cover.webp", "width": 1200, "height": 630, "max_bytes": 2000000 },
     { "file": "motion/preview.gif", "width": 320, "height": 180, "max_bytes": 500000 },
@@ -80,7 +81,7 @@ Start-Process .\report\report.html
 }
 ```
 
-每项都需要 `file`、`width`、`height` 和 `max_bytes`，且当前版本拒绝未识别字段（例如把 `max_bytes` 错拼成 `max_byts`），避免忽略用户写下的要求。宽、高和大小上限必须是正整数，小数会直接报错而不会被截断。`file` 可写为目录内相对路径，例如 `social/cover.jpeg`；使用 `/` 作为分隔符，不得使用绝对路径、反斜线或 `..` 路径段。
+每项都需要 `file`、`width`、`height` 和 `max_bytes`；可选 `label` 用于写明用途，并显示在 HTML/JSON 报告中。当前版本拒绝未识别字段（例如把 `max_bytes` 错拼成 `max_byts`），避免忽略用户写下的要求。宽、高和大小上限必须是正整数，小数会直接报错而不会被截断。`file` 可写为目录内相对路径，例如 `social/cover.jpeg`；使用 `/` 作为分隔符，不得使用绝对路径、反斜线或 `..` 路径段。
 
 ## 项目结构
 

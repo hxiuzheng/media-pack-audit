@@ -108,13 +108,17 @@ pub fn render_html(report : AuditReport) -> String {
   output <+
     #|  <div class="table-wrap"><table>
   output <+
-    #|    <thead><tr><th>素材</th><th>状态</th><th>检测到</th><th>SHA-256</th><th>结果</th></tr></thead>
+    #|    <thead><tr><th>素材</th><th>用途</th><th>状态</th><th>检测到</th><th>SHA-256</th><th>结果</th></tr></thead>
   output <+
     #|    <tbody>
   for result in report.results {
     let status_class = if result.status == "PASS" { "good" } else { "bad" }
+    let label = match result.label {
+      Some(value) => html_escape(value)
+      None => "—"
+    }
     output <+
-      "      <tr><td><code>\{html_escape(result.file)}</code></td><td><span class=\"badge \{status_class}\">\{html_escape(result.status)}</span></td><td>\{html_escape(result.observed)}</td><td><code>\{html_escape(result.sha256)}</code></td><td>\{html_escape(result.details)}</td></tr>\n"
+      "      <tr><td><code>\{html_escape(result.file)}</code></td><td>\{label}</td><td><span class=\"badge \{status_class}\">\{html_escape(result.status)}</span></td><td>\{html_escape(result.observed)}</td><td><code>\{html_escape(result.sha256)}</code></td><td>\{html_escape(result.details)}</td></tr>\n"
   }
   output <+
     #|    </tbody>

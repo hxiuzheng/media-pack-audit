@@ -10,9 +10,8 @@
 | 项目简介 / 一页选题说明 | [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md) | 草案已备；提交前须由参赛者补充真实场景并审阅 |
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/duplicates`、`examples/demo` | 已满足；本机按命令演示 |
-| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；SHA-256 标准向量、原始清单指纹、未知字段与小数规格拒绝、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机与 Ubuntu / Windows CI 均通过 |
+| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；SHA-256 标准向量、原始清单指纹、未知字段与小数规格拒绝、用途标签及 HTML 转义、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机通过；用途标签回归待跨平台 CI 复核 |
 | 跨平台 CI | [GitHub Actions 运行 #35235721120](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35235721120)：提交 `c758fde` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、20 项原生测试和 CLI smoke，覆盖未知字段拒绝、小数尺寸与 `max_bytes` 拒绝及错误报告不落盘 | 已满足（截至该提交） |
-| 跨平台 CI | [GitHub Actions 运行 #35234757940](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35234757940)：提交 `fea1a19` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、20 项原生测试及 CLI smoke，覆盖清单未知字段拒绝和 Windows 换行下的清单 SHA-256 核对 | 已满足（截至该提交） |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
 | AI 辅助透明且成果可解释 | README 与开发记录明确披露 Codex 辅助 | 文档已披露；参赛者本人仍须理解并能讲解代码 |

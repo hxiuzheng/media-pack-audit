@@ -1,6 +1,7 @@
 ///|
 pub(all) struct AssetSpec {
   file : String
+  label : String?
   width : Int
   height : Int
   max_bytes : Int
@@ -14,6 +15,7 @@ pub(all) struct Manifest {
 ///|
 pub(all) struct CheckResult {
   file : String
+  label : String?
   status : String
   observed : String
   sha256 : String
@@ -518,6 +520,7 @@ pub async fn scan_assets(
   if manifest.assets.is_empty() {
     results.push({
       file: "<manifest>",
+      label: None,
       status: "FAIL",
       observed: "0 项",
       sha256: "—",
@@ -538,6 +541,7 @@ pub async fn scan_assets(
     if !is_safe_asset_path(spec.file) {
       results.push({
         file: spec.file,
+        label: spec.label,
         status: "FAIL",
         observed: "—",
         sha256: "—",
@@ -548,6 +552,7 @@ pub async fn scan_assets(
     if duplicate {
       results.push({
         file: spec.file,
+        label: spec.label,
         status: "FAIL",
         observed: "重复项",
         sha256: "—",
@@ -558,6 +563,7 @@ pub async fn scan_assets(
     if spec.width <= 0 || spec.height <= 0 || spec.max_bytes <= 0 {
       results.push({
         file: spec.file,
+        label: spec.label,
         status: "FAIL",
         observed: "—",
         sha256: "—",
@@ -570,6 +576,7 @@ pub async fn scan_assets(
       None => {
         results.push({
           file: spec.file,
+          label: spec.label,
           status: "FAIL",
           observed: "不支持的格式",
           sha256: "—",
@@ -583,6 +590,7 @@ pub async fn scan_assets(
     if !contains_entry(entries, spec.file) {
       results.push({
         file: spec.file,
+        label: spec.label,
         status: "FAIL",
         observed: "缺失",
         sha256: "—",
@@ -594,6 +602,7 @@ pub async fn scan_assets(
     if kind != @fs.FileKind::Regular {
       results.push({
         file: spec.file,
+        label: spec.label,
         status: "FAIL",
         observed: "非普通文件",
         sha256: "—",
@@ -674,7 +683,14 @@ pub async fn scan_assets(
     } else {
       "\{issue_details}；\{duplicate_details}"
     }
-    results.push({ file: spec.file, status, observed, sha256, details, })
+    results.push({
+      file: spec.file,
+      label: spec.label,
+      status,
+      observed,
+      sha256,
+      details,
+    })
   }
 
   for name in entries {
@@ -702,6 +718,7 @@ pub async fn scan_assets(
           }
           results.push({
             file: name,
+            label: None,
             status: "EXTRA",
             observed: "\{size} bytes",
             sha256,

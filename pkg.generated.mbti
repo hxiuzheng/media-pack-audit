@@ -27,6 +27,7 @@ pub fn webp_dimensions(Bytes, Int64) -> (Int, Int)?
 // Types and methods
 pub(all) struct AssetSpec {
   file : String
+  label : String?
   width : Int
   height : Int
   max_bytes : Int
@@ -43,6 +44,7 @@ pub(all) struct AuditReport {
 
 pub(all) struct CheckResult {
   file : String
+  label : String?
   status : String
   observed : String
   sha256 : String

@@ -31,6 +31,7 @@ async fn main {
   let manifest_sha256 = @crypto.bytes_to_hex_string(manifest_hasher.finalize())
   if !clean_json.contains("\"passed\": 6") ||
     !clean_json.contains("\"failed\": 0") ||
+    !clean_json.contains("\"label\": \"课程主视觉 & 海报\"") ||
     !clean_json.contains("\"manifest_sha256\": \"\{manifest_sha256}\"") ||
     !clean_json.contains(
       "\"sha256\": \"d361eb5db86e8dd44c63d108e6505c7c235208b36936e90762a0701d4df4d139\"",
@@ -45,7 +46,8 @@ async fn main {
     !clean_json.contains("motion/preview.gif") ||
     !clean_json.contains("4 × 3") ||
     !clean_json.contains("1200 × 630") ||
-    !clean_html.contains("片盒点检") {
+    !clean_html.contains("片盒点检") ||
+    !clean_html.contains("课程主视觉 &amp; 海报") {
     raise Failure::Failure(
       "clean report should include expected assets and the independently verified SHA-256",
     )

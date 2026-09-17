@@ -121,6 +121,7 @@ fn first_manifest_field_error(json : Json) -> String? {
                 Object(fields) =>
                   for field, field_value in fields {
                     if field != "file" &&
+                      field != "label" &&
                       field != "width" &&
                       field != "height" &&
                       field != "max_bytes" {
