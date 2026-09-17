@@ -10,8 +10,8 @@
 | 项目简介 / 一页选题说明 | [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md) | 草案已备；提交前须由参赛者补充真实场景并审阅 |
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/demo` | 已满足；本机按命令演示 |
-| 必要测试 | PNG/JPEG/GIF 尺寸测试；PNG CRC 与 SHA-256 标准向量、IHDR 字段、header-only 截断、块长度越界、缺少 IEND、尾随数据和 IDAT CRC 损坏测试；CLI smoke 将跨多块 SHA-256 报告值与独立计算值比对，并验证超限时跳过；尺寸与文件大小错误报告显示清单要求值和实际值；另覆盖递归、路径越界、通过/失败报告、大小写不一致及各类无效输入 | 本机覆盖通过；最新演示变更待 CI |
-| 跨平台 CI | [GitHub Actions 运行 #35220136903](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35220136903)：提交 `c3d7911` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、原生测试及新增诊断 smoke | 已满足（该提交） |
+| 必要测试 | PNG/JPEG/GIF 尺寸测试；PNG CRC 与 SHA-256 标准向量、IHDR 字段、header-only 截断、块长度越界、缺少 IEND、尾随数据和 IDAT CRC 损坏测试；CLI smoke 将跨多块 SHA-256 报告值与独立计算值比对，并验证超限时跳过；尺寸与文件大小错误报告显示清单要求值和实际值；另覆盖递归、路径越界、通过/失败报告、大小写不一致及各类无效输入 | 本机与跨平台 CI 均通过 |
+| 跨平台 CI | [GitHub Actions 运行 #35221569664](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35221569664)：提交 `169fbc4` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、原生测试及失败演示 smoke | 已满足（该提交） |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
 | AI 辅助透明且成果可解释 | README 与开发记录明确披露 Codex 辅助 | 文档已披露；参赛者本人仍须理解并能讲解代码 |
