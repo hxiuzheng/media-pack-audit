@@ -16,6 +16,7 @@ pub(all) struct CheckResult {
   file : String
   status : String
   observed : String
+  sha256 : String
   details : String
 } derive(ToJson)
 
@@ -288,6 +289,29 @@ fn read_png_dimension(bytes : Bytes, offset : Int) -> Int? {
 }
 
 ///|
+async fn sha256_file(path : String, size : Int64) -> String? {
+  let file = @fs.open(path, mode=@fs.ReadOnly)
+  defer file.close()
+  let hasher = @crypto.SHA256::new()
+  let mut offset = 0L
+  while offset < size {
+    let remaining = size - offset
+    let block_size = if remaining > 65_536L {
+      65_536
+    } else {
+      Int64::to_int(remaining)
+    }
+    let block = file.read_exactly_at(block_size, position=offset)
+    hasher.update(block)
+    offset += Int::to_int64(block_size)
+  }
+  if @fs.file_size(path) != size {
+    return None
+  }
+  Some(@crypto.bytes_to_hex_string(hasher.finalize()))
+}
+
+///|
 async fn read_png_dimensions(path : String, size : Int64) -> (Int, Int)? {
   if size < Int::to_int64(33) {
     return None
@@ -481,6 +505,7 @@ pub async fn scan_assets(
       file: "<manifest>",
       status: "FAIL",
       observed: "0 项",
+      sha256: "—",
       details: "清单至少需要一项素材",
     })
   }
@@ -500,6 +525,7 @@ pub async fn scan_assets(
         file: spec.file,
         status: "FAIL",
         observed: "—",
+        sha256: "—",
         details: "file 必须是使用 / 分隔的安全相对路径，不能包含 ..、绝对路径或 Windows 分隔符",
       })
       continue
@@ -509,6 +535,7 @@ pub async fn scan_assets(
         file: spec.file,
         status: "FAIL",
         observed: "重复项",
+        sha256: "—",
         details: "清单中出现了重复文件名",
       })
       continue
@@ -518,6 +545,7 @@ pub async fn scan_assets(
         file: spec.file,
         status: "FAIL",
         observed: "—",
+        sha256: "—",
         details: "宽、高和 max_bytes 必须为正数",
       })
       continue
@@ -529,6 +557,7 @@ pub async fn scan_assets(
           file: spec.file,
           status: "FAIL",
           observed: "不支持的格式",
+          sha256: "—",
           details: "当前版本只检查 PNG、JPEG 和 GIF 图片",
         })
         continue
@@ -541,6 +570,7 @@ pub async fn scan_assets(
         file: spec.file,
         status: "FAIL",
         observed: "缺失",
+        sha256: "—",
         details: "清单要求的文件名（含大小写）没有交付",
       })
       continue
@@ -551,6 +581,7 @@ pub async fn scan_assets(
         file: spec.file,
         status: "FAIL",
         observed: "非普通文件",
+        sha256: "—",
         details: "清单路径必须指向普通文件",
       })
       continue
@@ -558,8 +589,25 @@ pub async fn scan_assets(
 
     let size = @fs.file_size(path)
     let issues : Array[String] = []
-    if size > Int::to_int64(spec.max_bytes) {
+    let max_bytes = Int::to_int64(spec.max_bytes)
+    if size > max_bytes {
       issues.push("文件大小超过 max_bytes")
+    }
+    let digest = if size <= max_bytes {
+      sha256_file(path, size) catch {
+        _ => None
+      }
+    } else {
+      None
+    }
+    let (sha256, hash_failed) = match digest {
+      Some(value) => (value, false)
+      None => ("—", size <= max_bytes)
+    }
+    if hash_failed {
+      issues.push(
+        "SHA-256 计算失败或文件大小在检查期间发生变化",
+      )
     }
     let dimensions = match format {
       RasterFormat::Png => read_png_dimensions(path, size)
@@ -593,7 +641,7 @@ pub async fn scan_assets(
     } else {
       issues.join("；")
     }
-    results.push({ file: spec.file, status, observed, details, })
+    results.push({ file: spec.file, status, observed, sha256, details, })
   }
 
   for name in entries {
@@ -608,10 +656,16 @@ pub async fn scan_assets(
         let path = join_asset_path(asset_dir, name)
         if @fs.kind(path, follow_symlink=false) == @fs.FileKind::Regular {
           let size = @fs.file_size(path)
+          let digest = sha256_file(path, size) catch { _ => None }
+          let sha256 = match digest {
+            Some(value) => value
+            None => "—"
+          }
           results.push({
             file: name,
             status: "EXTRA",
             observed: "\{size} bytes",
+            sha256,
             details: "图片文件未列在素材清单中",
           })
         }

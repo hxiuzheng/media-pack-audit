@@ -114,3 +114,13 @@ Windows 本机验证通过：`moon fmt --check`、`moon fmt --check scripts/cli_
 - 同步更新 README、项目简介和初审清单，列明新增回归覆盖。没有新增生产代码或真实用户试用记录。
 
 Windows 本机 `moon fmt`、`moon info`、`moon check --target native --deny-warn`、`moon test --target native`（14 passed）及 `moon run --target native scripts/cli_smoke.mbtx` 均通过；格式检查通过，CLI smoke 连续运行两次均成功。提交 `31032ae` 的 [GitHub Actions 运行 #35216322259](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35216322259) 中 Ubuntu 和 Windows jobs 均通过。
+
+## 2026-09-17：为素材报告增加 SHA-256 内容指纹
+
+- 检查报告的 JSON 和 HTML 现在为受支持的素材输出 SHA-256，便于保存报告后核对交付文件是否变化；指纹用于内容比对，不是数字签名或来源认证。
+- 以 64 KiB 块流式哈希，避免把整个图片读入内存。清单超出 `max_bytes` 时跳过哈希；哈希期间文件大小发生变化或读取失败时报告失败，不给出看似有效的指纹。
+- 使用版本固定为 `moonbitlang/x@0.5.5` 的 `moonbitlang/x/crypto` SHA-256 实现；该仓库将自身标为实验性，项目只使用其哈希 API，并用空串、`abc` 分块向量和端到端已知文件哈希验证。
+- 增加 70,000 字节回归样例，跨过 64 KiB 读取边界，并独立核对预期哈希；另验证超限素材显示未计算标记。
+- 本轮由 Codex 辅助实现；示例仍为合成 fixture，没有外部用户试用或反馈。
+
+本机 `moon update`、`moon fmt` / `moon fmt --check`、`.mbtx` 格式检查、`moon info`、`moon check --target native --deny-warn` 均通过；`moon test --target native` 为 15 passed；CLI smoke 连续运行两次均成功，覆盖 JSON/HTML 指纹、70,000 字节多块哈希、超限跳过及此前 PNG 结构边界。

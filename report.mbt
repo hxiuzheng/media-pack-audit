@@ -58,9 +58,9 @@ pub fn render_html(report : AuditReport) -> String {
   output <+
     #|    .good { color:var(--green); } .bad { color:var(--red); }
   output <+
-    #|    .table-wrap { overflow:hidden; }
+    #|    .table-wrap { overflow-x:auto; }
   output <+
-    #|    table { width:100%; border-collapse:collapse; text-align:left; }
+    #|    table { width:100%; min-width:980px; border-collapse:collapse; text-align:left; }
   output <+
     #|    th,td { padding:15px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
   output <+
@@ -74,7 +74,7 @@ pub fn render_html(report : AuditReport) -> String {
   output <+
     #|    footer { margin-top:18px; color:var(--muted); font-size:12px; }
   output <+
-    #|    @media(max-width:700px) { .cards { grid-template-columns:1fr; } th:nth-child(3),td:nth-child(3) { display:none; } main { padding-top:28px; } }
+    #|    @media(max-width:700px) { .cards { grid-template-columns:1fr; } main { padding-top:28px; } }
   output <+
     #|  </style>
   output <+
@@ -103,20 +103,20 @@ pub fn render_html(report : AuditReport) -> String {
   output <+
     #|  <div class="table-wrap"><table>
   output <+
-    #|    <thead><tr><th>素材</th><th>状态</th><th>检测到</th><th>结果</th></tr></thead>
+    #|    <thead><tr><th>素材</th><th>状态</th><th>检测到</th><th>SHA-256</th><th>结果</th></tr></thead>
   output <+
     #|    <tbody>
   for result in report.results {
     let status_class = if result.status == "PASS" { "good" } else { "bad" }
     output <+
-      "      <tr><td><code>\{html_escape(result.file)}</code></td><td><span class=\"badge \{status_class}\">\{html_escape(result.status)}</span></td><td>\{html_escape(result.observed)}</td><td>\{html_escape(result.details)}</td></tr>\n"
+      "      <tr><td><code>\{html_escape(result.file)}</code></td><td><span class=\"badge \{status_class}\">\{html_escape(result.status)}</span></td><td>\{html_escape(result.observed)}</td><td><code>\{html_escape(result.sha256)}</code></td><td>\{html_escape(result.details)}</td></tr>\n"
   }
   output <+
     #|    </tbody>
   output <+
     #|  </table></div>
   output <+
-    #|  <footer>片盒点检只读取 PNG/JPEG/GIF 尺寸头和清单信息，不会修改素材文件。</footer>
+    #|  <footer>片盒点检只读素材并记录 SHA-256 内容指纹；指纹不代表来源认证，工具不会解码或修改图像。</footer>
   output <+
     #|</main></body></html>
   output.to_string()

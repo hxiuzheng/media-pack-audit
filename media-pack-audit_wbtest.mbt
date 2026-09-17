@@ -8,6 +8,22 @@ test "PNG CRC-32 matches the standard check vector" {
 }
 
 ///|
+test "SHA-256 fingerprints match standard vectors across updates" {
+  let empty = @crypto.SHA256::new()
+  assert_true(
+    @crypto.bytes_to_hex_string(empty.finalize()) ==
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  )
+  let multipart = @crypto.SHA256::new()
+  multipart.update(b"a")
+  multipart.update(b"bc")
+  assert_true(
+    @crypto.bytes_to_hex_string(multipart.finalize()) ==
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+  )
+}
+
+///|
 test "PNG IHDR accepts only specified field combinations" {
   assert_true(png_ihdr_fields_are_valid(1, 0, 0, 0, 0))
   assert_true(png_ihdr_fields_are_valid(16, 0, 0, 0, 1))

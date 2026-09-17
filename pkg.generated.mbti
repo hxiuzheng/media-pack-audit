@@ -40,6 +40,7 @@ pub(all) struct CheckResult {
   file : String
   status : String
   observed : String
+  sha256 : String
   details : String
 } derive(ToJson)
 

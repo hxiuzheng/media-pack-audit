@@ -27,4 +27,5 @@ description = "A MoonBit CLI that checks visual asset handoff folders against a 
 
 import {
   "moonbitlang/async@0.22.1",
+  "moonbitlang/x@0.5.5",
 }
