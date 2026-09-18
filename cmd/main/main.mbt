@@ -180,38 +180,48 @@ fn first_manifest_field_error(json : Json) -> String? {
   match json {
     Object(root) =>
       for key, value in root {
-        if key != "assets" {
+        if key != "assets" && key != "max_total_bytes" {
           return Some("未知字段 \{key}")
         }
-        match value {
-          Array(assets) =>
-            for index in 0..<assets.length() {
-              match assets[index] {
-                Object(fields) =>
-                  for field, field_value in fields {
-                    if field != "file" &&
-                      field != "label" &&
-                      field != "width" &&
-                      field != "height" &&
-                      field != "max_bytes" {
-                      return Some("未知字段 assets[\{index}].\{field}")
-                    }
-                    if field == "width" ||
-                      field == "height" ||
-                      field == "max_bytes" {
-                      match field_value {
-                        Number(number, ..) if number.floor() != number =>
-                          return Some(
-                            "assets[\{index}].\{field} 必须是整数",
-                          )
-                        _ => ()
+        if key == "max_total_bytes" {
+          match value {
+            Number(number, ..) if number.floor() != number =>
+              return Some("max_total_bytes 必须是整数")
+            Number(number, ..) if number <= 0 =>
+              return Some("max_total_bytes 必须为正整数")
+            _ => ()
+          }
+        } else {
+          match value {
+            Array(assets) =>
+              for index in 0..<assets.length() {
+                match assets[index] {
+                  Object(fields) =>
+                    for field, field_value in fields {
+                      if field != "file" &&
+                        field != "label" &&
+                        field != "width" &&
+                        field != "height" &&
+                        field != "max_bytes" {
+                        return Some("未知字段 assets[\{index}].\{field}")
+                      }
+                      if field == "width" ||
+                        field == "height" ||
+                        field == "max_bytes" {
+                        match field_value {
+                          Number(number, ..) if number.floor() != number =>
+                            return Some(
+                              "assets[\{index}].\{field} 必须是整数",
+                            )
+                          _ => ()
+                        }
                       }
                     }
-                  }
-                _ => ()
+                  _ => ()
+                }
               }
-            }
-          _ => ()
+            _ => ()
+          }
         }
       }
     _ => ()

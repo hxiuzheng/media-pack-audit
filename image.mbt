@@ -10,6 +10,7 @@ pub(all) struct AssetSpec {
 ///|
 pub(all) struct Manifest {
   assets : Array[AssetSpec]
+  max_total_bytes : Int?
 } derive(FromJson, ToJson)
 
 ///|
@@ -849,6 +850,46 @@ pub async fn scan_assets(
         }
       }
     }
+  }
+
+  match manifest.max_total_bytes {
+    Some(limit) => {
+      let mut total_bytes = 0L
+      let int64_max = 9_223_372_036_854_775_807L
+      for name in entries {
+        let path = join_asset_path(asset_dir, name)
+        if @fs.kind(path, follow_symlink=false) == @fs.FileKind::Regular {
+          let size = @fs.file_size(path)
+          total_bytes = if size > int64_max - total_bytes {
+            int64_max
+          } else {
+            total_bytes + size
+          }
+        }
+      }
+      let max_total_bytes = Int::to_int64(limit)
+      let status = if max_total_bytes > 0 && total_bytes <= max_total_bytes {
+        "PASS"
+      } else {
+        "FAIL"
+      }
+      let details = if max_total_bytes <= 0 {
+        "max_total_bytes 必须为正整数"
+      } else if status == "PASS" {
+        "素材目录总大小符合上限 \{max_total_bytes} bytes"
+      } else {
+        "素材目录总大小 \{total_bytes} bytes 超出上限 \{max_total_bytes} bytes"
+      }
+      results.push({
+        file: "<package>",
+        label: None,
+        status,
+        observed: "\{total_bytes} bytes",
+        sha256: "—",
+        details,
+      })
+    }
+    None => ()
   }
 
   let mut passed = 0

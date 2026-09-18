@@ -29,8 +29,11 @@ async fn main {
     @fs.read_file("examples/clean/media-pack.json").binary(),
   )
   let manifest_sha256 = @crypto.bytes_to_hex_string(manifest_hasher.finalize())
-  if !clean_json.contains("\"passed\": 6") ||
+  if !clean_json.contains("\"passed\": 7") ||
     !clean_json.contains("\"failed\": 0") ||
+    !clean_json.contains("\"file\": \"<package>\"") ||
+    !clean_json.contains("\"observed\": \"96985 bytes\"") ||
+    !clean_json.contains("素材目录总大小符合上限 100000 bytes") ||
     !clean_json.contains("\"label\": \"课程主视觉 & 海报\"") ||
     !clean_json.contains("\"manifest_sha256\": \"\{manifest_sha256}\"") ||
     !clean_json.contains(
@@ -116,8 +119,57 @@ async fn main {
     "fractional-max-bytes", "examples/invalid/fractional-max-bytes.json", "assets[0].max_bytes 必须是整数",
   )
   expect_invalid_manifest(
+    "fractional-max-total-bytes", "examples/invalid/fractional-max-total-bytes.json",
+    "max_total_bytes 必须是整数",
+  )
+  expect_invalid_manifest(
+    "zero-max-total-bytes", "examples/invalid/zero-max-total-bytes.json", "max_total_bytes 必须为正整数",
+  )
+  expect_invalid_manifest(
     "duplicate-width-key", "examples/invalid/duplicate-width-key.json", "重复 JSON 字段 width",
   )
+
+  let package_budget_dir = "_build/cli-smoke/package-budget"
+  let package_assets_dir = "\{package_budget_dir}/assets/subdir"
+  if !@fs.exists(package_assets_dir) {
+    @fs.mkdir(package_assets_dir, recursive=true)
+  }
+  @fs.write_file(
+    "\{package_assets_dir}/poster.png",
+    @fs.read_file("examples/clean/assets/poster.png").binary(),
+  )
+  @fs.write_file("\{package_assets_dir}/notes.txt", "note")
+  let package_total_bytes = @fs.file_size("\{package_assets_dir}/poster.png") +
+    4L
+  @fs.write_file(
+    "\{package_budget_dir}/media-pack.json",
+    "{\"max_total_bytes\":1,\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":4096}]}",
+  )
+  let over_budget = @shell.Cmd("moon", [
+    "run",
+    "--target",
+    "native",
+    "cmd/main",
+    "--",
+    "\{package_budget_dir}/media-pack.json",
+    "\{package_budget_dir}/assets",
+    "--output",
+    "\{package_budget_dir}/report",
+  ]).output()
+  let over_budget_json = @fs.read_file(
+    "\{package_budget_dir}/report/report.json",
+  ).text()
+  if over_budget.exit_code() != 1 ||
+    !over_budget_json.contains("\"file\": \"<package>\"") ||
+    !over_budget_json.contains("\"failed\": 1") ||
+    !over_budget_json.contains("\"observed\": \"\{package_total_bytes} bytes\"") ||
+    !over_budget_json.contains(
+      "素材目录总大小 \{package_total_bytes} bytes 超出上限 1 bytes",
+    ) {
+    raise Failure::Failure(
+      "package byte budget should count the recursive assets tree and fail over the cap",
+    )
+  }
 
   let duplicate_sample = @shell.Cmd("moon", [
     "run", "--target", "native", "cmd/main", "--", "examples/duplicates/media-pack.json",
@@ -426,7 +478,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0 with package budget, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 

@@ -53,6 +53,7 @@ pub(all) struct CheckResult {
 
 pub(all) struct Manifest {
   assets : Array[AssetSpec]
+  max_total_bytes : Int?
 } derive(ToJson, @json.FromJson)
 
 // Type aliases
