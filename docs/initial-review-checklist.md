@@ -10,7 +10,7 @@
 | 项目简介 / 一页选题说明 | [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md) | 草案已备；提交前须由参赛者补充真实场景并审阅 |
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/duplicates`、`examples/demo` | 已满足；本机按命令演示 |
-| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；SHA-256 标准向量、原始清单指纹、未知字段、小数规格和重复 JSON 字段（含转义等价键）拒绝、用途标签及 HTML 转义、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机与 Ubuntu / Windows CI 均通过 |
+| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；JPEG EXIF Orientation 大小端换算与无效值回退；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；SHA-256 标准向量、原始清单指纹、未知字段、小数规格和重复 JSON 字段（含转义等价键）拒绝、用途标签及 HTML 转义、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机与 Ubuntu / Windows CI 均通过 |
 | 跨平台 CI | [GitHub Actions 运行 #35237939030](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35237939030)：提交 `b08ea24` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、20 项原生测试及包含转义重复键用例的 CLI smoke | 已满足（截至该提交） |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
@@ -22,7 +22,7 @@
 - 按官方要求加入赛事交流群，并留意资格审核与后续通知。
 - 把“数字媒体素材交付规格预检”方向发给组织方，确认选题和工作范围适合本期赛事。对三个已检查项目的领域区分见 [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md)，不能据此保证与所有参赛者都不重叠。
 - 用自己熟悉的真实素材交付场景试跑；记录规格来源、命中情况、误报/漏报、耗时和使用者反馈。填写 [真实素材试用记录模板](real-use-trial-template.md)。当前仓库只有合成 fixture，不能声称已完成真实用户试用。
-- 亲自从干净环境跟 README 重跑示例与测试，并准备现场讲解清单字段、PNG chunk CRC 与不解压 IDAT 的边界、JPEG SOF、WebP VP8/VP8L/VP8X 尺寸头与 RIFF 边界、GIF 逻辑屏幕尺寸限制、相对路径安全策略、扩展名与路径大小写处理和报告边界。
+- 亲自从干净环境跟 README 重跑示例与测试，并准备现场讲解清单字段、PNG chunk CRC 与不解压 IDAT 的边界、JPEG SOF 与 EXIF Orientation 显示方向、WebP VP8/VP8L/VP8X 尺寸头与 RIFF 边界、GIF 逻辑屏幕尺寸限制、相对路径安全策略、扩展名与路径大小写处理和报告边界。
 
 ## 建议演示
 

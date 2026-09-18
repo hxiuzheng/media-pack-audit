@@ -162,6 +162,7 @@ pub fn jpeg_dimensions(bytes : Bytes) -> (Int, Int)? {
   }
 
   let mut offset = 2
+  let mut orientation : Int? = None
   while offset < bytes.length() {
     if bytes[offset] != b'\xFF' {
       return None
@@ -193,6 +194,9 @@ pub fn jpeg_dimensions(bytes : Bytes) -> (Int, Int)? {
     if segment_length < 2 || offset + segment_length > bytes.length() {
       return None
     }
+    if marker == b'\xE1' && orientation is None {
+      orientation = jpeg_exif_orientation(bytes, offset + 2, segment_length - 2)
+    }
     if is_jpeg_start_of_frame(marker) {
       if segment_length < 8 {
         return None
@@ -204,13 +208,131 @@ pub fn jpeg_dimensions(bytes : Bytes) -> (Int, Int)? {
         return None
       }
       if width > 0 && height > 0 {
-        return Some((width, height))
+        match orientation {
+          Some(value) if value >= 5 && value <= 8 =>
+            return Some((height, width))
+          _ => return Some((width, height))
+        }
       }
       return None
     }
     offset += segment_length
   }
   None
+}
+
+///|
+/// Read the EXIF Orientation tag from a JPEG APP1 payload. Invalid or
+/// unsupported EXIF metadata is ignored so the SOF dimensions remain usable.
+fn jpeg_exif_orientation(
+  bytes : Bytes,
+  payload_start : Int,
+  payload_length : Int,
+) -> Int? {
+  if payload_start < 0 ||
+    payload_length < 32 ||
+    payload_start > bytes.length() - payload_length {
+    return None
+  }
+  if bytes[payload_start] != b'E' ||
+    bytes[payload_start + 1] != b'x' ||
+    bytes[payload_start + 2] != b'i' ||
+    bytes[payload_start + 3] != b'f' ||
+    bytes[payload_start + 4] != b'\x00' ||
+    bytes[payload_start + 5] != b'\x00' {
+    return None
+  }
+
+  let tiff_start = payload_start + 6
+  let payload_end = payload_start + payload_length
+  let little_endian = if bytes[tiff_start] == b'I' &&
+    bytes[tiff_start + 1] == b'I' {
+    true
+  } else if bytes[tiff_start] == b'M' && bytes[tiff_start + 1] == b'M' {
+    false
+  } else {
+    return None
+  }
+  if read_tiff_u16(bytes, tiff_start + 2, little_endian) != 42 {
+    return None
+  }
+  let ifd_offset = match
+    read_tiff_u32_bounded(bytes, tiff_start + 4, payload_end, little_endian) {
+    Some(value) if value >= 8 => value
+    _ => return None
+  }
+  let ifd_start = tiff_start + ifd_offset
+  if ifd_start + 2 > payload_end {
+    return None
+  }
+  let entry_count = read_tiff_u16(bytes, ifd_start, little_endian)
+  let entries_start = ifd_start + 2
+  let entry_bytes = entry_count * 12
+  if entry_bytes + 4 > payload_end - entries_start {
+    return None
+  }
+  for entry_index in 0..<entry_count {
+    let entry_start = entries_start + entry_index * 12
+    let tag = read_tiff_u16(bytes, entry_start, little_endian)
+    let field_type = read_tiff_u16(bytes, entry_start + 2, little_endian)
+    if tag == 274 &&
+      field_type == 3 &&
+      tiff_u32_is_one(bytes, entry_start + 4, little_endian) {
+      let value = read_tiff_u16(bytes, entry_start + 8, little_endian)
+      if value >= 1 && value <= 8 {
+        return Some(value)
+      }
+    }
+  }
+  None
+}
+
+///|
+fn read_tiff_u16(bytes : Bytes, offset : Int, little_endian : Bool) -> Int {
+  if little_endian {
+    read_little_endian_u16(bytes, offset)
+  } else {
+    read_big_endian_u16(bytes, offset)
+  }
+}
+
+///|
+/// TIFF offsets must fit within a JPEG APP1 segment (at most 64 KiB).
+fn read_tiff_u32_bounded(
+  bytes : Bytes,
+  offset : Int,
+  end : Int,
+  little_endian : Bool,
+) -> Int? {
+  if offset < 0 || offset + 4 > end {
+    return None
+  }
+  if little_endian {
+    if bytes[offset + 2] != b'\x00' || bytes[offset + 3] != b'\x00' {
+      return None
+    }
+    Some(read_little_endian_u16(bytes, offset))
+  } else {
+    if bytes[offset] != b'\x00' || bytes[offset + 1] != b'\x00' {
+      return None
+    }
+    Some(read_big_endian_u16(bytes, offset + 2))
+  }
+}
+
+///|
+fn tiff_u32_is_one(bytes : Bytes, offset : Int, little_endian : Bool) -> Bool {
+  if little_endian {
+    bytes[offset] == b'\x01' &&
+    bytes[offset + 1] == b'\x00' &&
+    bytes[offset + 2] == b'\x00' &&
+    bytes[offset + 3] == b'\x00'
+  } else {
+    bytes[offset] == b'\x00' &&
+    bytes[offset + 1] == b'\x00' &&
+    bytes[offset + 2] == b'\x00' &&
+    bytes[offset + 3] == b'\x01'
+  }
 }
 
 ///|

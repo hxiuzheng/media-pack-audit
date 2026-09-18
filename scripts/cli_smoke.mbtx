@@ -68,6 +68,38 @@ async fn main {
     raise Failure::Failure("HTML report should expose the SHA-256 fingerprint")
   }
 
+  let oriented_dir = "_build/cli-smoke/jpeg-exif-orientation"
+  if !@fs.exists("\{oriented_dir}/assets") {
+    @fs.mkdir("\{oriented_dir}/assets", recursive=true)
+  }
+  @fs.write_file(
+    "\{oriented_dir}/assets/portrait.jpg",
+    b"\xFF\xD8\xFF\xE1\x00\x22Exif\x00\x00II\x2A\x00\x08\x00\x00\x00\x01\x00\x12\x01\x03\x00\x01\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00\xFF\xC0\x00\x11\x08\x00\x03\x00\x04\x03\x01\x11\x00\x02\x11\x01\x03\x11\x01",
+  )
+  @fs.write_file(
+    "\{oriented_dir}/media-pack.json",
+    "{\"assets\":[{\"file\":\"portrait.jpg\",\"width\":3,\"height\":4,\"max_bytes\":1000}]}",
+  )
+  let oriented_jpeg = @shell.Cmd("moon", [
+    "run",
+    "--target",
+    "native",
+    "cmd/main",
+    "--",
+    "\{oriented_dir}/media-pack.json",
+    "\{oriented_dir}/assets",
+    "--output",
+    "\{oriented_dir}/report",
+  ]).output()
+  let oriented_json = @fs.read_file("\{oriented_dir}/report/report.json").text()
+  if oriented_jpeg.exit_code() != 0 ||
+    !oriented_json.contains("\"passed\": 1") ||
+    !oriented_json.contains("3 × 4") {
+    raise Failure::Failure(
+      "JPEG EXIF orientation should be applied to reported display dimensions",
+    )
+  }
+
   expect_invalid_manifest(
     "unknown-asset-field", "examples/invalid/unknown-asset-field.json", "未知字段 assets[0].max_byts",
   )
@@ -394,7 +426,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 
