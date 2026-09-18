@@ -1,6 +1,6 @@
 # 九月 MoonBit 黑客松初审与验收准备清单
 
-按 [2026 MoonBit 九月黑客松官方页面](https://moonbitlang.github.io/Hackathon2026/)核对，核对日期：2026-09-17。页面列出的申报与项目验收截止日为 **2026-09-24**，资格审核滚动进行。申报需提交参赛信息、公开仓库和一页项目说明；开发与验收看公开持续记录、MoonBit 主体实现、README、测试和可复现演示。最终以赛事正式章程与组织方通知为准。
+按 [2026 MoonBit 九月黑客松官方页面](https://moonbitlang.github.io/Hackathon2026/)核对，核对日期：2026-09-18。页面列出的申报与项目验收截止日为 **2026-09-24**，资格审核滚动进行。申报需提交参赛信息、公开仓库和一页项目说明；开发与验收看公开持续记录、MoonBit 主体实现、README、测试和可复现演示。最终以赛事正式章程与组织方通知为准。
 
 ## 仓库内可核验项
 
@@ -10,8 +10,8 @@
 | 项目简介 / 一页选题说明 | [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md) | 草案已备；提交前须由参赛者补充真实场景并审阅 |
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/duplicates`、`examples/demo` | 已满足；本机按命令演示 |
-| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；JPEG EXIF Orientation 大小端换算与无效值回退；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；SHA-256 标准向量、原始清单指纹、未知字段、小数规格和重复 JSON 字段（含转义等价键）拒绝、用途标签及 HTML 转义、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机与 Ubuntu / Windows CI 均通过 |
-| 跨平台 CI | [GitHub Actions 运行 #35304023810](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35304023810)：提交 `1ce1cb1` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、22 项原生测试及含 JPEG EXIF 方向用例的 CLI smoke | 已满足（截至该提交） |
+| 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；JPEG EXIF Orientation 大小端换算与无效值回退；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；素材目录总容量预算通过/超限、小数与零值拒绝；SHA-256 标准向量、原始清单指纹、未知字段、小数规格和重复 JSON 字段（含转义等价键）拒绝、用途标签及 HTML 转义、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机与 Ubuntu / Windows CI 均通过 |
+| 跨平台 CI | [GitHub Actions 运行 #35306416802](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35306416802)：提交 `602f606` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、22 项原生测试及含目录总容量预算与 JPEG EXIF 方向用例的 CLI smoke | 已满足（截至该提交） |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
 | AI 辅助透明且成果可解释 | README 与开发记录明确披露 Codex 辅助 | 文档已披露；参赛者本人仍须理解并能讲解代码 |

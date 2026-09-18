@@ -2,6 +2,14 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-09-18：增加素材目录总容量预算
+
+- 清单可选设置 max_total_bytes；点检递归计算素材目录树内所有普通文件的总字节数，图片与非图片都计入，符号链接不计入。报告新增 package 汇总行，显示实际总量与上限，并在超限时将其计入失败数。
+- clean 示例使用 100,000 bytes 上限并验证 96,985 bytes 全部通过；CLI smoke 另用嵌套 PNG 与 notes.txt 证明非图片文件计入总量、1-byte 上限会失败。小数与零值预算会在生成报告前拒绝；未设置预算的旧清单继续通过。
+- README、项目简介与初审核对表同步更新。本机 Windows 格式检查、moon info、无警告检查、22 项原生测试和可重复 CLI smoke 均通过。
+- 提交 602f606 的 GitHub Actions 运行 [#35306416802](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35306416802) 中 Ubuntu 与 Windows jobs 均通过格式、无警告检查、22 项原生测试及 CLI smoke。
+- 测试仍使用合成素材；真实素材试用和外部用户反馈仍待完成。
+
 ## 2026-09-18：按 EXIF 方向检查 JPEG 显示尺寸
 
 - 发现 JPEG SOF 记录的是文件中存储的宽高；照片若带有旋转或镜像的 EXIF Orientation，显示时的宽高可能不同，直接核对会误报。
