@@ -11,7 +11,7 @@
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/duplicates`、`examples/demo` | 已满足；本机按命令演示 |
 | 必要测试 | PNG/JPEG/WebP/GIF 尺寸测试；JPEG EXIF Orientation 大小端换算与无效值回退；WebP 覆盖 VP8、VP8L、VP8X 头并以 libwebp 解码验证真实夹具，端到端检查 RIFF 结构；PNG CRC 与结构边界；SHA-256 标准向量、原始清单指纹、未知字段、小数规格和重复 JSON 字段（含转义等价键）拒绝、用途标签及 HTML 转义、分块读取、超限跳过、清单内重复与额外图片重复提示；尺寸/大小诊断、递归、路径越界、报告与各类无效输入 smoke | 本机与 Ubuntu / Windows CI 均通过 |
-| 跨平台 CI | [GitHub Actions 运行 #35237939030](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35237939030)：提交 `b08ea24` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、20 项原生测试及包含转义重复键用例的 CLI smoke | 已满足（截至该提交） |
+| 跨平台 CI | [GitHub Actions 运行 #35304023810](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35304023810)：提交 `1ce1cb1` 的 Ubuntu 和 Windows jobs 均通过格式、无警告检查、22 项原生测试及含 JPEG EXIF 方向用例的 CLI smoke | 已满足（截至该提交） |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录；截止前继续真实迭代 |
 | 开源许可证 | 根目录 `LICENSE`：Apache-2.0 | 已满足 |
 | AI 辅助透明且成果可解释 | README 与开发记录明确披露 Codex 辅助 | 文档已披露；参赛者本人仍须理解并能讲解代码 |

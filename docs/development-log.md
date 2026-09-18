@@ -2,6 +2,14 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-09-18：按 EXIF 方向检查 JPEG 显示尺寸
+
+- 发现 JPEG SOF 记录的是文件中存储的宽高；照片若带有旋转或镜像的 EXIF Orientation，显示时的宽高可能不同，直接核对会误报。
+- JPEG 尺寸读取现在会解析 APP1 中的 EXIF Orientation，支持小端和大端 TIFF；方向 5–8 时交换宽高。EXIF 缺失、无效或不完整时沿用 SOF 尺寸，不影响普通 JPEG。
+- 单元测试覆盖两种字节序和无效方向回退；CLI smoke 使用带 Orientation=6 的合成 JPEG 验证显示为 3×4 并通过。README、项目简介和初审核对项同步说明显示尺寸语义及 4 MiB 元数据扫描边界。
+- Windows 本机格式检查、`moon info`、`moon check --target native --deny-warn`、22 项原生测试和 CLI smoke 均通过。提交 `1ce1cb1` 的 [GitHub Actions 运行 #35304023810](https://github.com/hxiuzheng/media-pack-audit/actions/runs/35304023810) 中 Ubuntu 与 Windows jobs 均成功。
+- CLI smoke 使用合成 JPEG，不代表真实素材试用；外部用户反馈仍待完成。
+
 ## 2026-09-17：拒绝重复 JSON 清单字段
 
 - 复现发现，同一素材对象重复声明 `width` 时，JSON 映射解析会静默保留其中一个值，导致清单含糊却仍可能通过检查。
