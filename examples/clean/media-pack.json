@@ -1,7 +1,7 @@
 {
   "max_total_bytes": 100000,
   "assets": [
-    { "file": "poster.png", "label": "课程主视觉 & 海报", "width": 4, "height": 3, "max_bytes": 4096 },
+    { "file": "poster.png", "label": "课程主视觉 & 海报", "width": 4, "height": 3, "max_bytes": 4096, "expected_sha256": "D361EB5DB86E8DD44C63D108E6505C7C235208B36936E90762A0701D4DF4D139" },
     { "file": "social/cover.jpeg", "width": 1200, "height": 630, "max_bytes": 100000 },
     { "file": "social/icon.webp", "width": 4, "height": 3, "max_bytes": 4096 },
     { "file": "social/photo.webp", "width": 1200, "height": 630, "max_bytes": 50000 },

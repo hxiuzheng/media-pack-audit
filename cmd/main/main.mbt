@@ -202,8 +202,28 @@ fn first_manifest_field_error(json : Json) -> String? {
                         field != "label" &&
                         field != "width" &&
                         field != "height" &&
-                        field != "max_bytes" {
+                        field != "max_bytes" &&
+                        field != "expected_sha256" {
                         return Some("未知字段 assets[\{index}].\{field}")
+                      }
+                      if field == "expected_sha256" {
+                        match field_value {
+                          String(expected) => {
+                            if expected.length() != 64 {
+                              return Some(
+                                "assets[\{index}].expected_sha256 必须是 64 位十六进制字符串",
+                              )
+                            }
+                            for character in expected {
+                              if !is_hex_character(character) {
+                                return Some(
+                                  "assets[\{index}].expected_sha256 必须是 64 位十六进制字符串",
+                                )
+                              }
+                            }
+                          }
+                          _ => ()
+                        }
                       }
                       if field == "width" ||
                         field == "height" ||
@@ -227,4 +247,11 @@ fn first_manifest_field_error(json : Json) -> String? {
     _ => ()
   }
   None
+}
+
+///|
+fn is_hex_character(character : Char) -> Bool {
+  (character >= '0' && character <= '9') ||
+  (character >= 'a' && character <= 'f') ||
+  (character >= 'A' && character <= 'F')
 }

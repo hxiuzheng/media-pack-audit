@@ -1,0 +1,11 @@
+{
+  "assets": [
+    {
+      "file": "poster.png",
+      "width": 4,
+      "height": 3,
+      "max_bytes": 4096,
+      "expected_sha256": "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+    }
+  ]
+}

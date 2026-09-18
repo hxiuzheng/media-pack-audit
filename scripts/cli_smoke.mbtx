@@ -126,6 +126,12 @@ async fn main {
     "zero-max-total-bytes", "examples/invalid/zero-max-total-bytes.json", "max_total_bytes 必须为正整数",
   )
   expect_invalid_manifest(
+    "short-expected-sha256", "examples/invalid/short-expected-sha256.json", "assets[0].expected_sha256 必须是 64 位十六进制字符串",
+  )
+  expect_invalid_manifest(
+    "nonhex-expected-sha256", "examples/invalid/nonhex-expected-sha256.json", "assets[0].expected_sha256 必须是 64 位十六进制字符串",
+  )
+  expect_invalid_manifest(
     "duplicate-width-key", "examples/invalid/duplicate-width-key.json", "重复 JSON 字段 width",
   )
 
@@ -168,6 +174,61 @@ async fn main {
     ) {
     raise Failure::Failure(
       "package byte budget should count the recursive assets tree and fail over the cap",
+    )
+  }
+
+  let expected_sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+  @fs.write_file(
+    "\{package_budget_dir}/sha-mismatch-manifest.json",
+    "{\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":4096,\"expected_sha256\":\"\{expected_sha256}\"}]}",
+  )
+  let sha_mismatch = @shell.Cmd("moon", [
+    "run",
+    "--target",
+    "native",
+    "cmd/main",
+    "--",
+    "\{package_budget_dir}/sha-mismatch-manifest.json",
+    "\{package_budget_dir}/assets",
+    "--output",
+    "\{package_budget_dir}/sha-mismatch",
+  ]).output()
+  let sha_mismatch_json = @fs.read_file(
+    "\{package_budget_dir}/sha-mismatch/report.json",
+  ).text()
+  if sha_mismatch.exit_code() != 1 ||
+    !sha_mismatch_json.contains("\"failed\": 1") ||
+    !sha_mismatch_json.contains(
+      "SHA-256 不匹配（清单要求 \{expected_sha256}）",
+    ) {
+    raise Failure::Failure(
+      "a different asset SHA-256 should fail and report the expected digest",
+    )
+  }
+
+  @fs.write_file(
+    "\{package_budget_dir}/sha-skipped-manifest.json",
+    "{\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":1,\"expected_sha256\":\"\{expected_sha256}\"}]}",
+  )
+  let sha_skipped = @shell.Cmd("moon", [
+    "run",
+    "--target",
+    "native",
+    "cmd/main",
+    "--",
+    "\{package_budget_dir}/sha-skipped-manifest.json",
+    "\{package_budget_dir}/assets",
+    "--output",
+    "\{package_budget_dir}/sha-skipped",
+  ]).output()
+  let sha_skipped_json = @fs.read_file(
+    "\{package_budget_dir}/sha-skipped/report.json",
+  ).text()
+  if sha_skipped.exit_code() != 1 ||
+    !sha_skipped_json.contains("跳过预期 SHA-256 校验") ||
+    !sha_skipped_json.contains("\"sha256\": \"—\"") {
+    raise Failure::Failure(
+      "over-limit assets should report that expected SHA-256 was not checked",
     )
   }
 
@@ -478,7 +539,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0 with package budget, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0 with package budget and expected SHA-256, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 

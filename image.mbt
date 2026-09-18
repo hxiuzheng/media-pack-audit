@@ -5,6 +5,7 @@ pub(all) struct AssetSpec {
   width : Int
   height : Int
   max_bytes : Int
+  expected_sha256 : String?
 } derive(FromJson, ToJson)
 
 ///|
@@ -447,6 +448,23 @@ pub fn sha256_bytes(bytes : Bytes) -> String {
 }
 
 ///|
+fn normalize_sha256(value : String) -> String {
+  let mut normalized = ""
+  for character in value {
+    normalized += match character {
+      'A' => "a"
+      'B' => "b"
+      'C' => "c"
+      'D' => "d"
+      'E' => "e"
+      'F' => "f"
+      _ => character.to_string()
+    }
+  }
+  normalized
+}
+
+///|
 async fn read_png_dimensions(path : String, size : Int64) -> (Int, Int)? {
   if size < Int::to_int64(33) {
     return None
@@ -755,6 +773,23 @@ pub async fn scan_assets(
       issues.push(
         "SHA-256 计算失败或文件大小在检查期间发生变化",
       )
+    }
+    match spec.expected_sha256 {
+      Some(_) if size > max_bytes =>
+        issues.push(
+          "文件大小超出 max_bytes，跳过预期 SHA-256 校验",
+        )
+      Some(_) if hash_failed => ()
+      Some(expected) =>
+        match digest {
+          Some(actual) =>
+            if normalize_sha256(expected) != actual {
+              issues.push("SHA-256 不匹配（清单要求 \{expected}）")
+            }
+          None =>
+            issues.push("SHA-256 未能计算，无法核对清单预期值")
+        }
+      None => ()
     }
     let dimensions = match format {
       RasterFormat::Png => read_png_dimensions(path, size)
