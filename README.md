@@ -130,7 +130,7 @@ moon run --target native scripts/cli_smoke.mbtx
 
 后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。选题上与 `moonbit-posterkit`、MoonBitMark 等生成/转换类项目的差异，见上文「与同类项目的区别」一节。
 
-参赛项目简介和初审准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。
+参赛项目简介、初审申报版和准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md)、[`docs/片盒点检项目申报书_初审申报版.md`](docs/片盒点检项目申报书_初审申报版.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。
 
 ## 人工主导、AI 辅助说明
 
