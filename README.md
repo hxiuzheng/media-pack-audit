@@ -1,6 +1,6 @@
 # 片盒点检 · MediaPack Audit
 
-**面向数字媒体素材交付的轻量级预检 CLI。** 它读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/WebP/GIF 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。
+**面向数字媒体素材交付的轻量级预检 CLI。** 它读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/WebP/GIF/BMP/TIFF 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。
 
 > MoonBit Lang Hackathon 2026 项目方向：用 MoonBit 构建一个可复现的数字媒体工作流小工具。核心聚焦在“素材包验收”，不做图像编辑器、素材生成器或通用文件管理器。
 
@@ -102,7 +102,7 @@ Start-Process .\report\report.html
 
 ## 项目结构
 
-- `image.mbt`、`webp.mbt`：清单类型、PNG/JPEG/WebP/GIF 尺寸解析与素材点检逻辑。
+- `image.mbt`、`webp.mbt`：清单类型、PNG/JPEG/WebP/GIF/BMP/TIFF 尺寸解析与素材点检逻辑。
 - `report.mbt`：HTML 报告及文本转义。
 - `cmd/main`：命令行入口与报告落盘。
 - `examples/demo`：可直接运行的多格式错误示例素材包（所有图片都是合成测试夹具）。
@@ -112,15 +112,31 @@ Start-Process .\report\report.html
 - `examples/invalid`：无效清单、路径越界、未知字段和小数规格样例。
 - `scripts/cli_smoke.mbtx`：端到端验证 CLI 的退出码和报告生成。
 
-## 参赛计划
+## 当前验证基线与复现说明
 
-本项目刻意把范围控制在可解释、可演示、可测试的一条链路：清单输入 → 文件点检 → HTML/JSON 交付报告。后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。选题上与 `moonbit-posterkit`、MoonBitMark 等生成/转换类项目的差异，见上文「与同类项目的区别」一节。
+本项目刻意把范围控制在可解释、可演示、可测试的一条链路：清单输入 → 文件点检 → HTML/JSON 交付报告。当前主分支的验证基线是 MoonBit `0.1.20260915 (2e1a46d)`；仓库依赖版本记录在 `moon.mod`，建议使用该版本或更新版本运行：
+
+```sh
+moon version --all
+moon update
+moon fmt --check
+moon fmt --check scripts/cli_smoke.mbtx
+moon check --target native --deny-warn
+moon test --target native
+moon run --target native scripts/cli_smoke.mbtx
+```
+
+如果本地工具链早于上述基线，依赖注册表可能无法解析当前版本的 `moonbitlang/async` 和 `moonbitlang/x`；这属于工具链兼容问题，不应被误报为测试通过。Ubuntu 与 Windows 的公开 CI 会执行同一组原生检查和 CLI 回归。
+
+后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。选题上与 `moonbit-posterkit`、MoonBitMark 等生成/转换类项目的差异，见上文「与同类项目的区别」一节。
 
 参赛项目简介和初审准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。
 
-## AI 协作说明
+## 人工主导、AI 辅助说明
 
-开发过程中使用 Codex 辅助代码实现、MoonBit API 查询、测试和文档整理。参赛者需要逐项复核改动、理解实现并对最终提交负责；尚未理解的代码应先验证和学习，再作为参赛成果进行说明。
+本项目采用人工主导、AI 辅助的开发方式。项目方向、问题定义、格式支持范围、只读与安全边界、验收标准、公开声明和最终提交由参赛者本人决定。Codex 只用于 MoonBit API 查询、重复性代码草拟、边界用例枚举、编译诊断和文档整理。
+
+AI 生成的建议不自动视为成果：每项改动都必须由参赛者检查源码、运行相关测试并理解其限制；未完成人工复核的改动不得作为最终参赛成果。仓库保留开发记录中的 AI 辅助披露，不改写历史来伪造纯人工作者。提交前的人工复核项目见 [`docs/human-review-checklist.md`](docs/human-review-checklist.md)。
 
 ## License
 
