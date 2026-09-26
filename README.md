@@ -113,9 +113,7 @@ Start-Process .\report\report.html
 
 本项目刻意把范围控制在可解释、可演示、可测试的一条链路：清单输入 → 文件点检 → HTML/JSON 交付报告。后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。选题上与 `moonbit-posterkit`、MoonBitMark 等生成/转换类项目的差异，见上文「与同类项目的区别」一节。
 
-参赛项目简介和初审准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。项目代码公开不代表已完成赛事报名或资格审核。
-
-真实素材试用尚未完成；空白记录格式见 [试用记录模板](docs/real-use-trial-template.md)。合成样例和人为制造的错误不代替真实用户试用。
+参赛项目简介和初审准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。
 
 ## AI 协作说明
 
