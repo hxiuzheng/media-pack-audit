@@ -82,8 +82,13 @@ async fn main {
   @fs.write_file(json_path, json_text)
   @fs.write_file(html_path, @audit.render_html(report))
 
+  let pass_rate = if report.checked == 0 {
+    100
+  } else {
+    report.passed * 100 / report.checked
+  }
   println(
-    "片盒点检完成：\{report.checked} 项，\{report.passed} 项通过，\{report.failed} 项需处理。",
+    "片盒点检完成：\{report.checked} 项，\{report.passed} 项通过，\{report.failed} 项需处理，通过率 \{pass_rate}%。",
   )
   println("规格清单 SHA-256：\{report.manifest_sha256}")
   for result in report.results {

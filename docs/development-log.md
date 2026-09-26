@@ -2,6 +2,21 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-09-26：支持 aspect 宽高比校验
+
+- 素材项新增可选 `aspect` 字段（W:H 形式），用整数交叉相乘精确核对宽高比；清单校验在扫描前拒绝非法比例。
+- 新增 `parse_aspect`、`matches_aspect` 及 2 组单元测试；本机 `moon check`、`moon test`（31 passed）与 `moon fmt --check` 均通过。
+
+## 2026-09-26：支持 TIFF 图片尺寸解析
+
+- `RasterFormat` 新增 Tiff，`.tif`/`.tiff` 接入；读取 TIFF 头与 IFD 中的 ImageWidth/ImageLength 标签，支持 II/MM 两种字节序与 SHORT/LONG 两种值类型。
+- 新增 3 个单元测试；本机 `moon check`、`moon test`（29 passed）与 `moon fmt --check` 均通过。
+
+## 2026-09-26：支持 BMP 位图尺寸解析
+
+- `RasterFormat` 新增 Bmp，`.bmp` 接入；读取 DIB 头宽高，支持 BITMAPINFOHEADER（及后续头）与旧式 BITMAPCOREHEADER，负高度取绝对值。
+- 新增 4 个单元测试；本机 `moon check`、`moon test`（26 passed）与 `moon fmt --check` 均通过。
+
 ## 2026-09-26：真实素材试用（本机真实图片）
 
 - 用本机真实 JPEG 图片（数码照片与长截图，共 4 张）做了一次真实素材试用，验证工具对真实（非合成）文件的尺寸、单文件大小与总容量检查。
