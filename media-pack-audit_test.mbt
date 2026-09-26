@@ -75,6 +75,35 @@ test "rejects malformed and zero-sized GIF headers" {
 }
 
 ///|
+test "reads BITMAPINFOHEADER BMP dimensions" {
+  let bmp : Bytes = b"BM\x36\x00\x00\x00\x00\x00\x00\x00\x36\x00\x00\x00\x28\x00\x00\x00\x04\x00\x00\x00\x03\x00\x00\x00"
+  assert_true(bmp_dimensions(bmp) == Some((4, 3)))
+}
+
+///|
+test "reports absolute height for top-down BMP" {
+  let bmp : Bytes = b"BM\x36\x00\x00\x00\x00\x00\x00\x00\x36\x00\x00\x00\x28\x00\x00\x00\x04\x00\x00\x00\xFD\xFF\xFF\xFF"
+  assert_true(bmp_dimensions(bmp) == Some((4, 3)))
+}
+
+///|
+test "reads BITMAPCOREHEADER BMP dimensions" {
+  let bmp : Bytes = b"BM\x36\x00\x00\x00\x00\x00\x00\x00\x36\x00\x00\x00\x0C\x00\x00\x00\x04\x00\x03\x00\x00\x00\x00\x00"
+  assert_true(bmp_dimensions(bmp) == Some((4, 3)))
+}
+
+///|
+test "rejects malformed and zero-sized BMP headers" {
+  assert_true(bmp_dimensions(b"not a BMP") is None)
+  let not_bm : Bytes = b"XX\x36\x00\x00\x00\x00\x00\x00\x00\x36\x00\x00\x00\x28\x00\x00\x00\x04\x00\x00\x00\x03\x00\x00\x00"
+  assert_true(bmp_dimensions(not_bm) is None)
+  let bad_dib : Bytes = b"BM\x36\x00\x00\x00\x00\x00\x00\x00\x36\x00\x00\x00\x08\x00\x00\x00\x04\x00\x00\x00\x03\x00\x00\x00"
+  assert_true(bmp_dimensions(bad_dib) is None)
+  let zero_width : Bytes = b"BM\x36\x00\x00\x00\x00\x00\x00\x00\x36\x00\x00\x00\x28\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00"
+  assert_true(bmp_dimensions(zero_width) is None)
+}
+
+///|
 test "escapes HTML special characters" {
   assert_true(html_escape("<&>\"'") == "&lt;&amp;&gt;&quot;&#39;")
 }

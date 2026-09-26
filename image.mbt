@@ -356,6 +356,39 @@ pub fn gif_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
+/// Read the pixel dimensions from a BMP file header without decoding pixel data.
+/// Supports BITMAPINFOHEADER (and later headers) plus the legacy BITMAPCOREHEADER.
+/// A negative height (top-down DIB) is reported as its absolute value.
+pub fn bmp_dimensions(bytes : Bytes) -> (Int, Int)? {
+  if bytes.length() < 26 {
+    return None
+  }
+  if bytes[0] != b'B' || bytes[1] != b'M' {
+    return None
+  }
+  let dib_size = read_little_endian_u32(bytes, 14)
+  let (width, height) = if dib_size >= 40L {
+    (read_little_endian_u32(bytes, 18), read_little_endian_i32(bytes, 22))
+  } else if dib_size >= 12L {
+    (
+      Int::to_int64(read_little_endian_u16(bytes, 18)),
+      Int::to_int64(read_little_endian_u16(bytes, 20)),
+    )
+  } else {
+    return None
+  }
+  let abs_height = if height < 0L { 0L - height } else { height }
+  if width > 0L &&
+    abs_height > 0L &&
+    width < 2147483648L &&
+    abs_height < 2147483648L {
+    Some((Int64::to_int(width), Int64::to_int(abs_height)))
+  } else {
+    None
+  }
+}
+
+///|
 fn read_big_endian_u16(bytes : Bytes, offset : Int) -> Int {
   bytes[offset].to_int() * 256 + bytes[offset + 1].to_int()
 }
@@ -363,6 +396,24 @@ fn read_big_endian_u16(bytes : Bytes, offset : Int) -> Int {
 ///|
 fn read_little_endian_u16(bytes : Bytes, offset : Int) -> Int {
   bytes[offset].to_int() + bytes[offset + 1].to_int() * 256
+}
+
+///|
+fn read_little_endian_u32(bytes : Bytes, offset : Int) -> Int64 {
+  Int::to_int64(bytes[offset].to_int()) +
+  Int::to_int64(bytes[offset + 1].to_int()) * 256L +
+  Int::to_int64(bytes[offset + 2].to_int()) * 65536L +
+  Int::to_int64(bytes[offset + 3].to_int()) * 16777216L
+}
+
+///|
+fn read_little_endian_i32(bytes : Bytes, offset : Int) -> Int64 {
+  let value = read_little_endian_u32(bytes, offset)
+  if value >= 2147483648L {
+    value - 4294967296L
+  } else {
+    value
+  }
 }
 
 ///|
@@ -625,11 +676,23 @@ async fn read_gif_dimensions(path : String, size : Int64) -> (Int, Int)? {
 }
 
 ///|
+async fn read_bmp_dimensions(path : String, size : Int64) -> (Int, Int)? {
+  if size < 26L {
+    return None
+  }
+  let file = @fs.open(path, mode=@fs.ReadOnly)
+  defer file.close()
+  let header = file.read_exactly(26)
+  bmp_dimensions(header)
+}
+
+///|
 priv enum RasterFormat {
   Png
   Jpeg
   Webp
   Gif
+  Bmp
 }
 
 ///|
@@ -643,6 +706,8 @@ fn raster_format(name : String) -> RasterFormat? {
     Some(RasterFormat::Webp)
   } else if lower_name.has_suffix(".gif") {
     Some(RasterFormat::Gif)
+  } else if lower_name.has_suffix(".bmp") {
+    Some(RasterFormat::Bmp)
   } else {
     None
   }
@@ -721,7 +786,7 @@ pub async fn scan_assets(
           status: "FAIL",
           observed: "不支持的格式",
           sha256: "—",
-          details: "当前版本只检查 PNG、JPEG、WebP 和 GIF 图片",
+          details: "当前版本只检查 PNG、JPEG、WebP、GIF 和 BMP 图片",
         })
         continue
       }
@@ -796,6 +861,7 @@ pub async fn scan_assets(
       RasterFormat::Jpeg => read_jpeg_dimensions(path, size)
       RasterFormat::Webp => read_webp_dimensions(path, size)
       RasterFormat::Gif => read_gif_dimensions(path, size)
+      RasterFormat::Bmp => read_bmp_dimensions(path, size)
     }
     let observed = match dimensions {
       Some((width, height)) => "\{width} × \{height}，\{size} bytes"
@@ -810,6 +876,8 @@ pub async fn scan_assets(
               "WebP RIFF 结构无效、不完整或尺寸头错误"
             RasterFormat::Gif =>
               "GIF 文件头无效、不完整或尺寸为零"
+            RasterFormat::Bmp =>
+              "BMP 文件头无效、不完整或尺寸为零"
           },
         )
         "\{size} bytes"
