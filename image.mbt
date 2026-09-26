@@ -10,10 +10,22 @@ pub(all) struct AssetSpec {
 } derive(FromJson, ToJson)
 
 ///|
+pub extend AssetSpec with @moonbitlang/core/json.FromJson::{from_json}
+
+///|
+pub extend AssetSpec with ToJson::{to_json}
+
+///|
 pub(all) struct Manifest {
   assets : Array[AssetSpec]
   max_total_bytes : Int?
 } derive(FromJson, ToJson)
+
+///|
+pub extend Manifest with @moonbitlang/core/json.FromJson::{from_json}
+
+///|
+pub extend Manifest with ToJson::{to_json}
 
 ///|
 pub(all) struct CheckResult {
@@ -26,6 +38,9 @@ pub(all) struct CheckResult {
 } derive(ToJson)
 
 ///|
+pub extend CheckResult with ToJson::{to_json}
+
+///|
 pub(all) struct AuditReport {
   asset_dir : String
   manifest_sha256 : String
@@ -34,6 +49,9 @@ pub(all) struct AuditReport {
   failed : Int
   results : Array[CheckResult]
 } derive(ToJson)
+
+///|
+pub extend AuditReport with ToJson::{to_json}
 
 ///|
 pub fn png_dimensions(bytes : Bytes) -> (Int, Int)? {
