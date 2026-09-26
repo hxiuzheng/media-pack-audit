@@ -203,7 +203,8 @@ fn first_manifest_field_error(json : Json) -> String? {
                         field != "width" &&
                         field != "height" &&
                         field != "max_bytes" &&
-                        field != "expected_sha256" {
+                        field != "expected_sha256" &&
+                        field != "aspect" {
                         return Some("未知字段 assets[\{index}].\{field}")
                       }
                       if field == "expected_sha256" {
@@ -222,6 +223,17 @@ fn first_manifest_field_error(json : Json) -> String? {
                               }
                             }
                           }
+                          _ => ()
+                        }
+                      }
+                      if field == "aspect" {
+                        match field_value {
+                          String(aspect) =>
+                            if @audit.parse_aspect(aspect) is None {
+                              return Some(
+                                "assets[\{index}].aspect 必须是 W:H 形式的正整数比例",
+                              )
+                            }
                           _ => ()
                         }
                       }

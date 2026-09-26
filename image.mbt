@@ -6,6 +6,7 @@ pub(all) struct AssetSpec {
   height : Int
   max_bytes : Int
   expected_sha256 : String?
+  aspect : String?
 } derive(FromJson, ToJson)
 
 ///|
@@ -595,6 +596,58 @@ fn normalize_sha256(value : String) -> String {
 }
 
 ///|
+/// Parse an aspect ratio string "W:H" into its positive integer parts.
+pub fn parse_aspect(value : String) -> (Int, Int)? {
+  let chars = value.to_array()
+  let mut colon = -1
+  let mut index = 0
+  while index < chars.length() {
+    if chars[index] == ':' {
+      colon = index
+      break
+    }
+    index += 1
+  }
+  if colon <= 0 || colon == chars.length() - 1 {
+    return None
+  }
+  match
+    (
+      parse_positive_int(chars, 0, colon),
+      parse_positive_int(chars, colon + 1, chars.length()),
+    ) {
+    (Some(w), Some(h)) if w > 0 && h > 0 => Some((w, h))
+    _ => None
+  }
+}
+
+///|
+fn parse_positive_int(chars : Array[Char], start : Int, end : Int) -> Int? {
+  if start >= end {
+    return None
+  }
+  let mut value = 0
+  for index in start..<end {
+    let code = chars[index].to_int()
+    if code < 48 || code > 57 {
+      return None
+    }
+    if value > 214748364 {
+      return None
+    }
+    value = value * 10 + (code - 48)
+  }
+  Some(value)
+}
+
+///|
+/// Check whether width × height matches the aspect ratio aw:ah exactly.
+pub fn matches_aspect(width : Int, height : Int, aw : Int, ah : Int) -> Bool {
+  Int::to_int64(width) * Int::to_int64(ah) ==
+  Int::to_int64(height) * Int::to_int64(aw)
+}
+
+///|
 async fn read_png_dimensions(path : String, size : Int64) -> (Int, Int)? {
   if size < Int::to_int64(33) {
     return None
@@ -991,6 +1044,19 @@ pub async fn scan_assets(
         issues.push(
           "尺寸不匹配（清单要求 \{spec.width} × \{spec.height}，实际 \{width} × \{height}）",
         )
+      _ => ()
+    }
+    match (dimensions, spec.aspect) {
+      (Some((width, height)), Some(aspect)) =>
+        match parse_aspect(aspect) {
+          Some((aw, ah)) =>
+            if !matches_aspect(width, height, aw, ah) {
+              issues.push(
+                "宽高比不匹配（清单要求 \{aw}:\{ah}，实际 \{width} × \{height}）",
+              )
+            }
+          None => ()
+        }
       _ => ()
     }
     let status = if issues.is_empty() { "PASS" } else { "FAIL" }

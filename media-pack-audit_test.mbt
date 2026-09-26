@@ -124,6 +124,27 @@ test "rejects malformed TIFF headers and missing dimension tags" {
 }
 
 ///|
+test "parses aspect ratio strings" {
+  assert_true(parse_aspect("16:9") == Some((16, 9)))
+  assert_true(parse_aspect("4:3") == Some((4, 3)))
+  assert_true(parse_aspect("1:1") == Some((1, 1)))
+  assert_true(parse_aspect("16") is None)
+  assert_true(parse_aspect(":9") is None)
+  assert_true(parse_aspect("16:") is None)
+  assert_true(parse_aspect("a:b") is None)
+  assert_true(parse_aspect("16:0") is None)
+}
+
+///|
+test "matches aspect ratio by exact cross-multiplication" {
+  assert_true(matches_aspect(1920, 1080, 16, 9))
+  assert_true(matches_aspect(1600, 900, 16, 9))
+  assert_true(matches_aspect(100, 100, 1, 1))
+  assert_false(matches_aspect(1200, 630, 16, 9))
+  assert_false(matches_aspect(1080, 1920, 16, 9))
+}
+
+///|
 test "escapes HTML special characters" {
   assert_true(html_escape("<&>\"'") == "&lt;&amp;&gt;&quot;&#39;")
 }
