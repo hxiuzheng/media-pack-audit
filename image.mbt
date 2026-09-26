@@ -389,6 +389,77 @@ pub fn bmp_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
+/// Read the pixel dimensions from a TIFF header (ImageWidth / ImageLength tags)
+/// without decoding pixel data. Supports little-endian ("II") and big-endian
+/// ("MM") byte order, and both SHORT and LONG tag value types.
+pub fn tiff_dimensions(bytes : Bytes) -> (Int, Int)? {
+  if bytes.length() < 8 {
+    return None
+  }
+  let little_endian = if bytes[0] == b'I' && bytes[1] == b'I' {
+    true
+  } else if bytes[0] == b'M' && bytes[1] == b'M' {
+    false
+  } else {
+    return None
+  }
+  if read_tiff_u16(bytes, 2, little_endian) != 42 {
+    return None
+  }
+  let ifd_offset = read_tiff_u32(bytes, 4, little_endian)
+  if ifd_offset < 0L || ifd_offset >= Int::to_int64(bytes.length()) {
+    return None
+  }
+  let ifd = Int64::to_int(ifd_offset)
+  if ifd + 2 > bytes.length() {
+    return None
+  }
+  let entry_count = read_tiff_u16(bytes, ifd, little_endian)
+  let mut width : Int? = None
+  let mut height : Int? = None
+  for index in 0..<entry_count {
+    let entry = ifd + 2 + index * 12
+    if entry + 12 > bytes.length() {
+      return None
+    }
+    let tag = read_tiff_u16(bytes, entry, little_endian)
+    if tag == 256 || tag == 257 {
+      let field_type = read_tiff_u16(bytes, entry + 2, little_endian)
+      let value = match field_type {
+        3 => Int::to_int64(read_tiff_u16(bytes, entry + 8, little_endian))
+        4 => read_tiff_u32(bytes, entry + 8, little_endian)
+        _ => return None
+      }
+      if value < 0L || value >= 2147483648L {
+        return None
+      }
+      let int_value = Int64::to_int(value)
+      if int_value <= 0 {
+        return None
+      }
+      if tag == 256 {
+        width = Some(int_value)
+      } else {
+        height = Some(int_value)
+      }
+    }
+  }
+  match (width, height) {
+    (Some(w), Some(h)) => Some((w, h))
+    _ => None
+  }
+}
+
+///|
+fn read_tiff_u32(bytes : Bytes, offset : Int, little_endian : Bool) -> Int64 {
+  if little_endian {
+    read_little_endian_u32(bytes, offset)
+  } else {
+    read_big_endian_u32(bytes, offset)
+  }
+}
+
+///|
 fn read_big_endian_u16(bytes : Bytes, offset : Int) -> Int {
   bytes[offset].to_int() * 256 + bytes[offset + 1].to_int()
 }
@@ -414,6 +485,14 @@ fn read_little_endian_i32(bytes : Bytes, offset : Int) -> Int64 {
   } else {
     value
   }
+}
+
+///|
+fn read_big_endian_u32(bytes : Bytes, offset : Int) -> Int64 {
+  Int::to_int64(bytes[offset].to_int()) * 16777216L +
+  Int::to_int64(bytes[offset + 1].to_int()) * 65536L +
+  Int::to_int64(bytes[offset + 2].to_int()) * 256L +
+  Int::to_int64(bytes[offset + 3].to_int())
 }
 
 ///|
@@ -687,12 +766,31 @@ async fn read_bmp_dimensions(path : String, size : Int64) -> (Int, Int)? {
 }
 
 ///|
+async fn read_tiff_dimensions(path : String, size : Int64) -> (Int, Int)? {
+  if size < 8L {
+    return None
+  }
+  // TIFF headers, IFD entries, and the ImageWidth/ImageLength tags are normally
+  // near the start of the file; bound the read to keep memory use predictable.
+  let header_length = if size > 1_048_576L {
+    1_048_576
+  } else {
+    Int64::to_int(size)
+  }
+  let file = @fs.open(path, mode=@fs.ReadOnly)
+  defer file.close()
+  let header = file.read_exactly_at(header_length, position=0L)
+  tiff_dimensions(header)
+}
+
+///|
 priv enum RasterFormat {
   Png
   Jpeg
   Webp
   Gif
   Bmp
+  Tiff
 }
 
 ///|
@@ -708,6 +806,8 @@ fn raster_format(name : String) -> RasterFormat? {
     Some(RasterFormat::Gif)
   } else if lower_name.has_suffix(".bmp") {
     Some(RasterFormat::Bmp)
+  } else if lower_name.has_suffix(".tif") || lower_name.has_suffix(".tiff") {
+    Some(RasterFormat::Tiff)
   } else {
     None
   }
@@ -786,7 +886,7 @@ pub async fn scan_assets(
           status: "FAIL",
           observed: "不支持的格式",
           sha256: "—",
-          details: "当前版本只检查 PNG、JPEG、WebP、GIF 和 BMP 图片",
+          details: "当前版本只检查 PNG、JPEG、WebP、GIF、BMP 和 TIFF 图片",
         })
         continue
       }
@@ -862,6 +962,7 @@ pub async fn scan_assets(
       RasterFormat::Webp => read_webp_dimensions(path, size)
       RasterFormat::Gif => read_gif_dimensions(path, size)
       RasterFormat::Bmp => read_bmp_dimensions(path, size)
+      RasterFormat::Tiff => read_tiff_dimensions(path, size)
     }
     let observed = match dimensions {
       Some((width, height)) => "\{width} × \{height}，\{size} bytes"
@@ -878,6 +979,8 @@ pub async fn scan_assets(
               "GIF 文件头无效、不完整或尺寸为零"
             RasterFormat::Bmp =>
               "BMP 文件头无效、不完整或尺寸为零"
+            RasterFormat::Tiff =>
+              "TIFF 文件头无效、不完整或缺少尺寸标签"
           },
         )
         "\{size} bytes"

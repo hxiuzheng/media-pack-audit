@@ -104,6 +104,26 @@ test "rejects malformed and zero-sized BMP headers" {
 }
 
 ///|
+test "reads little-endian SHORT TIFF dimensions" {
+  let tiff : Bytes = b"II\x2A\x00\x08\x00\x00\x00\x02\x00\x00\x01\x03\x00\x01\x00\x00\x00\x04\x00\x00\x00\x01\x01\x03\x00\x01\x00\x00\x00\x03\x00\x00\x00"
+  assert_true(tiff_dimensions(tiff) == Some((4, 3)))
+}
+
+///|
+test "reads big-endian LONG TIFF dimensions" {
+  let tiff : Bytes = b"MM\x00\x2A\x00\x00\x00\x08\x00\x02\x01\x00\x00\x04\x00\x00\x00\x01\x00\x00\x00\x10\x01\x01\x00\x04\x00\x00\x00\x01\x00\x00\x00\x09"
+  assert_true(tiff_dimensions(tiff) == Some((16, 9)))
+}
+
+///|
+test "rejects malformed TIFF headers and missing dimension tags" {
+  assert_true(tiff_dimensions(b"not a TIFF") is None)
+  assert_true(tiff_dimensions(b"XX\x2A\x00\x08\x00\x00\x00\x00\x00") is None)
+  assert_true(tiff_dimensions(b"II\x00\x00\x08\x00\x00\x00\x00\x00") is None)
+  assert_true(tiff_dimensions(b"II\x2A\x00\x08\x00\x00\x00\x00\x00") is None)
+}
+
+///|
 test "escapes HTML special characters" {
   assert_true(html_escape("<&>\"'") == "&lt;&amp;&gt;&quot;&#39;")
 }
