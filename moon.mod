@@ -19,13 +19,20 @@ repository = "https://github.com/hxiuzheng/media-pack-audit"
 
 license = "Apache-2.0"
 
-keywords = [ "moonbit", "digital-media", "asset-validation", "cli" ]
+keywords = [
+  "moonbit",
+  "digital-media",
+  "asset-validation",
+  "image-metadata",
+  "library",
+]
 
 preferred_target = "native"
 
-description = "A MoonBit CLI that checks visual asset handoff folders against a media manifest."
+description = "A reusable MoonBit library that reads image metadata and validates visual asset handoff folders against a media manifest."
 
 import {
   "moonbitlang/async@0.22.1",
   "moonbitlang/x@0.5.5",
+  "gmlewis/crc32@0.8.18",
 }

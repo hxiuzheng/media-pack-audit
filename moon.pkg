@@ -2,4 +2,5 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/async/fs",
   "moonbitlang/x/crypto",
+  "gmlewis/crc32",
 }

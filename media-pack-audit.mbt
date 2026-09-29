@@ -1,3 +1,4 @@
-// Main package file for your library code.
-// Put public APIs and shared helpers here.
-// Keep blocks small and focused for easy refactors.
+///|
+/// 片盒点检（MediaPack Audit）是一个可复用的 MoonBit 库：读取图像元数据并对照媒体清单校验素材交付。
+/// 库对像素只读不解码，公开 11 种格式的尺寸解析、内容格式识别、清单校验与 HTML/JSON 报告生成。
+/// 命令行入口（cmd/main）只是本库的一个薄消费端。

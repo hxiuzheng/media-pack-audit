@@ -1,6 +1,6 @@
 # 项目申报简介｜片盒点检 MediaPack Audit
 
-- **项目方向：** 应用与内容工具 · 数字媒体素材交付预检
+- **项目方向：** 可复用库 · 数字媒体素材交付预检
 - **项目仓库：** <https://github.com/hxiuzheng/media-pack-audit>
 - **许可证：** Apache-2.0
 
@@ -16,7 +16,7 @@
 
 ## 技术实现与赛事匹配
 
-核心检查逻辑、报告和命令行入口均以 MoonBit 实现，使用 MoonBit 的文件与 JSON 能力；CI 在 Ubuntu 和 Windows 上执行格式检查、无警告检查、单元测试和 CLI 端到端回归。项目采用 Apache-2.0 许可证；开发过程中使用了 Codex 辅助实现，具体范围在 README 与开发记录中披露。
+核心检查逻辑、报告和命令行入口均以 MoonBit 实现，使用 MoonBit 的文件与 JSON 能力。项目以可复用库为核心，命令行入口只是薄消费端；架构借鉴 pillow 的「魔数识别 + 惰性读头」思想，并刻意不提供像素解码。通用底层能力直接复用成熟库而不重复造轮子：SHA-256 复用 moonbitlang/x/crypto，CRC-32 复用 gmlewis/crc32。CI 在 Ubuntu 和 Windows 上执行格式检查、无警告检查、单元测试和 CLI 端到端回归。项目采用 Apache-2.0 许可证；开发过程中使用了 Codex 辅助实现，具体范围在 README 与开发记录中披露。
 
 ## 当前验证证据与边界
 
@@ -33,3 +33,5 @@
 ## 选题区分
 
 片盒点检只做“验收”，不做“生成”。MoonBit 生态里有两个相邻但方向不同的项目：`moonbit-posterkit` 是数据驱动的海报和封面生成 DSL，用模板和布局把数据渲染成 SVG 海报、封面和社媒卡片；MoonBitMark 把文档和图片转换成 Markdown。它们的共同点是“生产或转换图片”，而片盒点检做的是“核对已经交付的图片”——不解码像素、不改动输入文件、不产出任何图片，只对照清单检查交付素材是否缺图、尺寸不对、超限或有未登记文件。三者是互补而不是替代：可以用 posterkit 生成海报、用 MoonBitMark 做文档配图，再在最终交付前用片盒点检对整包素材做一次可重复、可留档的验收。
+
+生态里还有 `mizchi/image`、`Nanaloveyuki/image`、`gmlewis/moonbit-image` 等负责“解码像素 / 图像处理”的库；片盒点检与它们正交互补（只读元数据、不解码像素），并在通用底层算法上直接复用成熟库（SHA-256 用 moonbitlang/x/crypto、CRC-32 用 gmlewis/crc32），避免重复造轮子。

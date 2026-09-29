@@ -4,7 +4,11 @@
 
 ///|
 test "PNG CRC-32 matches the standard check vector" {
-  assert_true(png_crc32(b"123456789", 0, 9) == -873187034)
+  let digest = @crc32.Digest::new()
+  for b in b"123456789" {
+    digest.write(b)
+  }
+  assert_true(digest.digest() == 0xCBF43926U)
 }
 
 ///|

@@ -1,8 +1,8 @@
 # 片盒点检 · MediaPack Audit
 
-**面向数字媒体素材交付的轻量级预检 CLI。** 它读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。
+**面向数字媒体素材交付的可复用预检库。** 核心是一个只读图像元数据的 MoonBit 库：读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。仓库同时提供一个命令行入口（CLI）作为库的薄消费端。
 
-> MoonBit Lang Hackathon 2026 项目方向：用 MoonBit 构建一个可复现的数字媒体工作流小工具。核心聚焦在“素材包验收”，不做图像编辑器、素材生成器或通用文件管理器。
+> MoonBit Lang Hackathon 2026 项目方向：用 MoonBit 构建一个可复用的数字媒体预检库。核心聚焦在“素材包验收”，不做图像编辑器、素材生成器或通用文件管理器。
 
 ## 为什么做它
 
@@ -91,6 +91,49 @@ Windows PowerShell 同样可以使用以上 Moon 命令；查看报告可运行�
 
 ```powershell
 Start-Process .\report\report.html
+```
+
+## 作为库使用
+
+核心能力以 MoonBit 库的形式发布，CLI 只是它的薄消费端。在你的项目里添加依赖：
+
+```sh
+moon add hxiuzheng/media-pack-audit
+```
+
+在 `moon.pkg` 中引入并起别名：
+
+```moonbit
+import {
+  "hxiuzheng/media-pack-audit" @audit,
+}
+```
+
+公开 API 概览（均只读头部、不解码像素）：
+
+- 尺寸解析：`png_dimensions` / `jpeg_dimensions` / `webp_dimensions` / `gif_dimensions` / `bmp_dimensions` / `tiff_dimensions` / `svg_dimensions` / `avif_dimensions` / `jp2_dimensions` / `ico_dimensions` / `psd_dimensions`，均接收 `Bytes` 返回 `(Int, Int)?`；
+- 内容格式识别：`detect_content_format(bytes)` 按文件头返回 `ImageFormat?`，`format_name(format)` 取规范小写名；
+- 清单校验：`scan_assets(asset_dir, manifest, manifest_sha256)` 返回 `AuditReport`；
+- 报告生成：`render_html(report)` 生成中文 HTML，`AuditReport` 实现 `ToJson` 生成机器可读 JSON；
+- 起步清单：`scaffold_manifest(asset_dir)` 从目录生成 `ScaffoldResult`；
+- 通用工具：`sha256_bytes`、`parse_aspect` / `matches_aspect`、`closest_match`、`html_escape`。
+
+最小示例（按文件头识别并读取单张图片的尺寸）：
+
+```moonbit
+fn inspect(bytes : Bytes) -> Unit {
+  match @audit.detect_content_format(bytes) {
+    Some(format) => {
+      let dims : (Int, Int)? = match format {
+        @audit.ImageFormat::Png => @audit.png_dimensions(bytes)
+        @audit.ImageFormat::Jpeg => @audit.jpeg_dimensions(bytes)
+        _ => None
+      }
+      println("格式 \{@audit.format_name(format)}，尺寸 \{dims}")
+    }
+    None => println("未识别的文件头")
+  }
+}
 ```
 
 ## 清单格式

@@ -99,56 +99,19 @@ pub fn png_dimensions(bytes : Bytes) -> (Int, Int)? {
 ///|
 /// Validate the CRC for the first PNG chunk (IHDR), without decoding image data.
 fn png_ihdr_crc_is_valid(bytes : Bytes) -> Bool {
-  let crc = png_crc32(bytes, 12, 29)
-  png_crc_matches(crc, bytes, 29)
-}
-
-///|
-/// CRC-32/ISO-HDLC as used by PNG chunks.
-fn png_crc32(bytes : Bytes, start : Int, end : Int) -> Int {
-  png_crc32_update(-1, bytes, start, end) ^ -1
-}
-
-///|
-fn png_crc32_update(crc : Int, bytes : Bytes, start : Int, end : Int) -> Int {
-  let mut result = crc
-  for index in start..<end {
-    result = result ^ bytes[index].to_int()
-    result = ((result >> 4) & 0x0FFFFFFF) ^ png_crc32_nibble(result & 0x0F)
-    result = ((result >> 4) & 0x0FFFFFFF) ^ png_crc32_nibble(result & 0x0F)
+  let digest = @crc32.Digest::new()
+  for index in 12..<29 {
+    digest.write(bytes[index])
   }
-  result
+  png_crc_matches(digest.digest(), bytes, 29)
 }
 
 ///|
-fn png_crc32_nibble(nibble : Int) -> Int {
-  match nibble {
-    0 => 0x00000000
-    1 => 0x1DB71064
-    2 => 0x3B6E20C8
-    3 => 0x26D930AC
-    4 => 0x76DC4190
-    5 => 0x6B6B51F4
-    6 => 0x4DB26158
-    7 => 0x5005713C
-    8 => 0xEDB88320
-    9 => 0xF00F9344
-    10 => 0xD6D6A3E8
-    11 => 0xCB61B38C
-    12 => 0x9B64C2B0
-    13 => 0x86D3D2D4
-    14 => 0xA00AE278
-    15 => 0xBDBDF21C
-    _ => 0
-  }
-}
-
-///|
-fn png_crc_matches(crc : Int, bytes : Bytes, offset : Int) -> Bool {
-  bytes[offset].to_int() == ((crc >> 24) & 0xFF) &&
-  bytes[offset + 1].to_int() == ((crc >> 16) & 0xFF) &&
-  bytes[offset + 2].to_int() == ((crc >> 8) & 0xFF) &&
-  bytes[offset + 3].to_int() == (crc & 0xFF)
+fn png_crc_matches(crc : UInt, bytes : Bytes, offset : Int) -> Bool {
+  bytes[offset] == (crc >> 24).to_byte() &&
+  bytes[offset + 1] == (crc >> 16).to_byte() &&
+  bytes[offset + 2] == (crc >> 8).to_byte() &&
+  bytes[offset + 3] == crc.to_byte()
 }
 
 ///|
@@ -738,7 +701,10 @@ async fn png_chunks_are_valid(file : @fs.File, size : Int64) -> Bool {
       return false
     }
 
-    let mut crc = png_crc32_update(-1, header, 4, 8)
+    let digest = @crc32.Digest::new()
+    for index in 4..<8 {
+      digest.write(header[index])
+    }
     let data_start = offset + 8L
     let data_end = data_start + length
     let mut data_offset = data_start
@@ -750,12 +716,13 @@ async fn png_chunks_are_valid(file : @fs.File, size : Int64) -> Bool {
         Int64::to_int(remaining)
       }
       let block = file.read_exactly_at(block_size, position=data_offset)
-      crc = png_crc32_update(crc, block, 0, block.length())
+      for index in 0..<block.length() {
+        digest.write(block[index])
+      }
       data_offset += Int::to_int64(block_size)
     }
-    crc = crc ^ -1
     let stored_crc = file.read_exactly_at(4, position=data_end)
-    if !png_crc_matches(crc, stored_crc, 0) {
+    if !png_crc_matches(digest.digest(), stored_crc, 0) {
       return false
     }
 
