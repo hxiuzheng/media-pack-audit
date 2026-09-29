@@ -8,7 +8,8 @@
 - 针对生态复用意见，在申报书中逐项回应 Pillow 的参考范围、MoonBit 图像库的能力边界和实际依赖复用：CRC-32 使用 `gmlewis/crc32`，SHA-256 使用 `moonbitlang/x/crypto`。没有将 Pillow 代码或 Python 包描述成本项目实现/依赖，也没有把仓库内消费示例包装成外部采用证据。
 - 修正过时的“全部验收/绝对安全”措辞，区分规格预检与完整图像解码/视觉验收，并说明真实素材试用仅覆盖 4 张 JPEG。
 - 将 `464551b` 人工复核签字明确限定为历史版本，并为本轮留下待申报人亲自完成的复核项。Codex 辅助本轮代码与材料修订；未代替申报人勾选或签字。
-- 复核遇到上一提交 CI 的 `Debug` 派生警告失败，删除 `ManifestParseError` 上不需要的 `derive(Debug)`。`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx` 与 `git diff --check` 本轮通过；本机 `moon check` / `moon test` / `moon info` 因 MoonBit 标准库预构建 `prelude.mi` 缺失和未安装 C 编译器，未能完成。待新提交双平台 CI 验证消费端及全量检查后补录确切结果。
+- 验证过程中，CI 先指出示例中原样重抛异常的 catch-all 不必要，随后运行步骤指出输出路径字符串没有使用 MoonBit 插值语法，导致写入字面量路径。两处均按 CI 诊断修正，并让示例断言预期扫描结果；不把编译通过误当作端到端通过。
+- `moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx` 与 `git diff --check` 本机通过；本机 `moon check` / `moon test` / `moon info` 因 MoonBit 标准库预构建 `prelude.mi` 缺失和未安装 C 编译器未能完成。双平台 CI 尚待最终修订验证，届时补录确切结果。
 
 ## 2026-09-29：支持 SVG/AVIF/JP2/ICO/PSD 五种格式的尺寸预检
 
