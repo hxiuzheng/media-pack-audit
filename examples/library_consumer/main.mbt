@@ -1,7 +1,7 @@
 ///|
 /// A separate package that consumes the public audit library API.
 async fn main {
-  let manifest_path = "examples/library_consumer/media-pack.json"
+  let manifest_path = "examples/clean/media-pack.json"
   let asset_dir = "examples/clean/assets"
   let manifest_bytes = @fs.read_file(manifest_path)
   let manifest = @audit.parse_manifest_json(manifest_bytes.text())
@@ -13,9 +13,9 @@ async fn main {
   @fs.mkdir(output_dir, recursive=true)
   @fs.write_file("\{output_dir}/report.json", json_report)
   @fs.write_file("\{output_dir}/report.html", html_report)
-  if report.checked != 1 || report.passed != 1 || report.failed != 0 {
+  if report.checked == 0 || report.passed != report.checked || report.failed != 0 {
     raise Failure::Failure(
-      "库消费示例预期 1 项通过，实际 checked=\{report.checked}, passed=\{report.passed}, failed=\{report.failed}",
+      "库消费示例预期所有已登记素材通过，实际 checked=\{report.checked}, passed=\{report.passed}, failed=\{report.failed}",
     )
   }
 
