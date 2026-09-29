@@ -6,19 +6,41 @@ import {
 }
 
 // Values
+pub fn avif_dimensions(Bytes) -> (Int, Int)?
+
+pub fn bmp_dimensions(Bytes) -> (Int, Int)?
+
+pub fn format_name(ImageFormat) -> String
+
 pub fn gif_dimensions(Bytes) -> (Int, Int)?
 
 pub fn html_escape(String) -> String
 
+pub fn ico_dimensions(Bytes) -> (Int, Int)?
+
+pub fn image_format(String) -> ImageFormat?
+
+pub fn jp2_dimensions(Bytes) -> (Int, Int)?
+
 pub fn jpeg_dimensions(Bytes) -> (Int, Int)?
 
+pub fn matches_aspect(Int, Int, Int, Int) -> Bool
+
+pub fn parse_aspect(String) -> (Int, Int)?
+
 pub fn png_dimensions(Bytes) -> (Int, Int)?
+
+pub fn psd_dimensions(Bytes) -> (Int, Int)?
 
 pub fn render_html(AuditReport) -> String
 
 pub async fn scan_assets(String, Manifest, String) -> AuditReport
 
 pub fn sha256_bytes(Bytes) -> String
+
+pub fn svg_dimensions(Bytes) -> (Int, Int)?
+
+pub fn tiff_dimensions(Bytes) -> (Int, Int)?
 
 pub fn webp_dimensions(Bytes, Int64) -> (Int, Int)?
 
@@ -32,7 +54,10 @@ pub(all) struct AssetSpec {
   height : Int
   max_bytes : Int
   expected_sha256 : String?
+  aspect : String?
 } derive(ToJson, @json.FromJson)
+pub fn AssetSpec::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn AssetSpec::to_json(Self) -> Json
 
 pub(all) struct AuditReport {
   asset_dir : String
@@ -42,6 +67,7 @@ pub(all) struct AuditReport {
   failed : Int
   results : Array[CheckResult]
 } derive(ToJson)
+pub fn AuditReport::to_json(Self) -> Json
 
 pub(all) struct CheckResult {
   file : String
@@ -51,11 +77,28 @@ pub(all) struct CheckResult {
   sha256 : String
   details : String
 } derive(ToJson)
+pub fn CheckResult::to_json(Self) -> Json
+
+pub(all) enum ImageFormat {
+  Png
+  Jpeg
+  Webp
+  Gif
+  Bmp
+  Tiff
+  Svg
+  Avif
+  Jp2
+  Ico
+  Psd
+}
 
 pub(all) struct Manifest {
   assets : Array[AssetSpec]
   max_total_bytes : Int?
 } derive(ToJson, @json.FromJson)
+pub fn Manifest::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Manifest::to_json(Self) -> Json
 
 // Type aliases
 

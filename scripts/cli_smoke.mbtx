@@ -71,6 +71,33 @@ async fn main {
     raise Failure::Failure("HTML report should expose the SHA-256 fingerprint")
   }
 
+  let formats = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "examples/formats/media-pack.json",
+    "examples/formats/assets", "--output", "_build/cli-smoke/formats",
+  ]).output()
+  if formats.exit_code() != 0 {
+    raise Failure::Failure(
+      "formats sample should return 0, got \{formats.exit_code()}\n\{formats.stderr()}",
+    )
+  }
+  let formats_json = @fs.read_file("_build/cli-smoke/formats/report.json").text()
+  if !formats_json.contains("\"passed\": 5") ||
+    !formats_json.contains("\"failed\": 0") ||
+    !formats_json.contains("logo.svg") ||
+    !formats_json.contains("hero.avif") ||
+    !formats_json.contains("scan.jp2") ||
+    !formats_json.contains("favicon.ico") ||
+    !formats_json.contains("mockup.psd") ||
+    !formats_json.contains("512 × 512") ||
+    !formats_json.contains("640 × 360") ||
+    !formats_json.contains("320 × 240") ||
+    !formats_json.contains("32 × 32") ||
+    !formats_json.contains("1200 × 800") {
+    raise Failure::Failure(
+      "formats sample should pass SVG/AVIF/JP2/ICO/PSD with the expected dimensions",
+    )
+  }
+
   let oriented_dir = "_build/cli-smoke/jpeg-exif-orientation"
   if !@fs.exists("\{oriented_dir}/assets") {
     @fs.mkdir("\{oriented_dir}/assets", recursive=true)
@@ -539,7 +566,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0 with package budget and expected SHA-256, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 

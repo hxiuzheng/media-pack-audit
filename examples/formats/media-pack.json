@@ -1,0 +1,9 @@
+{
+  "assets": [
+    { "file": "logo.svg", "label": "矢量 Logo", "width": 512, "height": 512, "max_bytes": 2048 },
+    { "file": "hero.avif", "label": "首页主视觉", "width": 640, "height": 360, "max_bytes": 65536 },
+    { "file": "scan.jp2", "label": "扫描件", "width": 320, "height": 240, "max_bytes": 65536 },
+    { "file": "favicon.ico", "label": "站点图标", "width": 32, "height": 32, "max_bytes": 4096 },
+    { "file": "mockup.psd", "label": "设计稿", "width": 1200, "height": 800, "max_bytes": 65536 }
+  ]
+}

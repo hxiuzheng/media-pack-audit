@@ -2,6 +2,26 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-09-29：支持 SVG/AVIF/JP2/ICO/PSD 五种格式的尺寸预检
+
+- 格式覆盖从 6 种扩到 11 种：新增 SVG、AVIF（HEIF）、JPEG 2000（JP2）、ICO/CUR、PSD 的尺寸读取，均只读容器/头部元数据、不解码像素。
+- 新增 `isobmff.mbt` 共享 ISO-BMFF 盒解析器，AVIF 与 JP2 共用同一套尺寸受限、边界校验的盒遍历逻辑；AVIF 沿 `meta→iprp→ipco→ispe` 链读取 ispe 宽高，JP2 沿 `jp2h→ihdr` 读取宽高。SVG 读取 `width`/`height` 属性或回退 `viewBox`，仅接受整数值并忽略 CSS 单位。ICO/CUR 读取首项目录项宽高（0 表示 256）。PSD 读取头部宽高，拒绝 PSB 版本。
+- 将内部 `RasterFormat` 重命名为公开的 `ImageFormat`，并暴露 `image_format`（扩展名映射）与 `format_name`（规范名称）两个公开函数，为后续清单脚手架与 `format` 断言复用。
+- 新增 `examples/formats` 样例（SVG/AVIF/JP2/ICO/PSD 全部通过），并在 CLI smoke 中加入对应端到端断言。真实样例由 Pillow 生成 AVIF/JP2/ICO，PSD 为最小头样例。
+- 已知边界如实保留：SVG 只接受整数宽高、不解析 CSS 继承；ICO/CUR 只读首项目录项；AVIF/JP2 只读容器尺寸盒、不解码码流；PSD 只读头部。这些边界已同步到 README 与项目简介。
+- 本轮由 AI 辅助实现与验证；格式盒结构与真实文件的边界（如 Pillow 生成的 AVIF 中 `iprp`/`ipco` 为普通盒而 `meta`/`ispe` 为 FullBox）通过读取真实样例字节确认并修正。最终仍需参赛者本人复核源码并理解每项限制。
+
+验证命令与结果（Windows 本机，MoonBit `0.1.20260915`）：
+
+```text
+moon fmt
+moon check --target native --deny-warn
+moon test --target native        # 46 passed
+moon run --target native scripts/cli_smoke.mbtx
+```
+
+以上均通过；`moon info` 已更新 `.mbti` 接口，新增 11 个公开尺寸函数与 `ImageFormat` 枚举。
+
 ## 2026-09-26：统一申报材料与人工复核边界
 
 - README、项目简介、初审清单和 CLI 帮助同步到当前的 PNG/JPEG/WebP/GIF/BMP/TIFF 与 `aspect` 功能范围。

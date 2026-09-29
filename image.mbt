@@ -855,32 +855,111 @@ async fn read_tiff_dimensions(path : String, size : Int64) -> (Int, Int)? {
 }
 
 ///|
-priv enum RasterFormat {
+/// A detected image format. Extending this list also requires updating the
+/// extension mapping in `image_format`, the reader dispatch in
+/// `read_image_dimensions`, and the diagnostic in `format_error_message`.
+pub(all) enum ImageFormat {
   Png
   Jpeg
   Webp
   Gif
   Bmp
   Tiff
+  Svg
+  Avif
+  Jp2
+  Ico
+  Psd
 }
 
 ///|
-fn raster_format(name : String) -> RasterFormat? {
+pub fn image_format(name : String) -> ImageFormat? {
   let lower_name = name.to_lower()
   if lower_name.has_suffix(".png") {
-    Some(RasterFormat::Png)
+    Some(ImageFormat::Png)
   } else if lower_name.has_suffix(".jpg") || lower_name.has_suffix(".jpeg") {
-    Some(RasterFormat::Jpeg)
+    Some(ImageFormat::Jpeg)
   } else if lower_name.has_suffix(".webp") {
-    Some(RasterFormat::Webp)
+    Some(ImageFormat::Webp)
   } else if lower_name.has_suffix(".gif") {
-    Some(RasterFormat::Gif)
+    Some(ImageFormat::Gif)
   } else if lower_name.has_suffix(".bmp") {
-    Some(RasterFormat::Bmp)
+    Some(ImageFormat::Bmp)
   } else if lower_name.has_suffix(".tif") || lower_name.has_suffix(".tiff") {
-    Some(RasterFormat::Tiff)
+    Some(ImageFormat::Tiff)
+  } else if lower_name.has_suffix(".svg") {
+    Some(ImageFormat::Svg)
+  } else if lower_name.has_suffix(".avif") {
+    Some(ImageFormat::Avif)
+  } else if lower_name.has_suffix(".jp2") {
+    Some(ImageFormat::Jp2)
+  } else if lower_name.has_suffix(".ico") || lower_name.has_suffix(".cur") {
+    Some(ImageFormat::Ico)
+  } else if lower_name.has_suffix(".psd") {
+    Some(ImageFormat::Psd)
   } else {
     None
+  }
+}
+
+///|
+/// Return the canonical lowercase format name used in reports and manifest
+/// `format` assertions.
+pub fn format_name(format : ImageFormat) -> String {
+  match format {
+    ImageFormat::Png => "png"
+    ImageFormat::Jpeg => "jpeg"
+    ImageFormat::Webp => "webp"
+    ImageFormat::Gif => "gif"
+    ImageFormat::Bmp => "bmp"
+    ImageFormat::Tiff => "tiff"
+    ImageFormat::Svg => "svg"
+    ImageFormat::Avif => "avif"
+    ImageFormat::Jp2 => "jp2"
+    ImageFormat::Ico => "ico"
+    ImageFormat::Psd => "psd"
+  }
+}
+
+///|
+/// Dispatch a file to the right dimension reader based on its detected format.
+async fn read_image_dimensions(
+  format : ImageFormat,
+  path : String,
+  size : Int64,
+) -> (Int, Int)? {
+  match format {
+    ImageFormat::Png => read_png_dimensions(path, size)
+    ImageFormat::Jpeg => read_jpeg_dimensions(path, size)
+    ImageFormat::Webp => read_webp_dimensions(path, size)
+    ImageFormat::Gif => read_gif_dimensions(path, size)
+    ImageFormat::Bmp => read_bmp_dimensions(path, size)
+    ImageFormat::Tiff => read_tiff_dimensions(path, size)
+    ImageFormat::Svg => read_svg_dimensions(path, size)
+    ImageFormat::Avif => read_avif_dimensions(path, size)
+    ImageFormat::Jp2 => read_jp2_dimensions(path, size)
+    ImageFormat::Ico => read_ico_dimensions(path, size)
+    ImageFormat::Psd => read_psd_dimensions(path, size)
+  }
+}
+
+///|
+fn format_error_message(format : ImageFormat) -> String {
+  match format {
+    ImageFormat::Png => "PNG 结构无效、不完整或 CRC 校验失败"
+    ImageFormat::Jpeg =>
+      "JPEG 文件头无效、不完整或 SOF 超出 4 MiB 扫描范围"
+    ImageFormat::Webp => "WebP RIFF 结构无效、不完整或尺寸头错误"
+    ImageFormat::Gif => "GIF 文件头无效、不完整或尺寸为零"
+    ImageFormat::Bmp => "BMP 文件头无效、不完整或尺寸为零"
+    ImageFormat::Tiff => "TIFF 文件头无效、不完整或缺少尺寸标签"
+    ImageFormat::Svg => "SVG 文档无效、不完整或缺少整数宽高"
+    ImageFormat::Avif =>
+      "AVIF 容器无效、不完整或缺少 ispe 尺寸属性"
+    ImageFormat::Jp2 =>
+      "JPEG 2000 容器无效、不完整或缺少 ihdr 尺寸头"
+    ImageFormat::Ico => "ICO/CUR 文件头无效、不完整或尺寸为零"
+    ImageFormat::Psd => "PSD 文件头无效、不完整或尺寸为零"
   }
 }
 
@@ -948,7 +1027,7 @@ pub async fn scan_assets(
       })
       continue
     }
-    let format = match raster_format(spec.file) {
+    let format = match image_format(spec.file) {
       Some(format) => format
       None => {
         results.push({
@@ -957,7 +1036,7 @@ pub async fn scan_assets(
           status: "FAIL",
           observed: "不支持的格式",
           sha256: "—",
-          details: "当前版本只检查 PNG、JPEG、WebP、GIF、BMP 和 TIFF 图片",
+          details: "当前版本只检查 PNG、JPEG、WebP、GIF、BMP、TIFF、SVG、AVIF、JP2、ICO 和 PSD 图片",
         })
         continue
       }
@@ -1027,33 +1106,11 @@ pub async fn scan_assets(
         }
       None => ()
     }
-    let dimensions = match format {
-      RasterFormat::Png => read_png_dimensions(path, size)
-      RasterFormat::Jpeg => read_jpeg_dimensions(path, size)
-      RasterFormat::Webp => read_webp_dimensions(path, size)
-      RasterFormat::Gif => read_gif_dimensions(path, size)
-      RasterFormat::Bmp => read_bmp_dimensions(path, size)
-      RasterFormat::Tiff => read_tiff_dimensions(path, size)
-    }
+    let dimensions = read_image_dimensions(format, path, size)
     let observed = match dimensions {
       Some((width, height)) => "\{width} × \{height}，\{size} bytes"
       None => {
-        issues.push(
-          match format {
-            RasterFormat::Png =>
-              "PNG 结构无效、不完整或 CRC 校验失败"
-            RasterFormat::Jpeg =>
-              "JPEG 文件头无效、不完整或 SOF 超出 4 MiB 扫描范围"
-            RasterFormat::Webp =>
-              "WebP RIFF 结构无效、不完整或尺寸头错误"
-            RasterFormat::Gif =>
-              "GIF 文件头无效、不完整或尺寸为零"
-            RasterFormat::Bmp =>
-              "BMP 文件头无效、不完整或尺寸为零"
-            RasterFormat::Tiff =>
-              "TIFF 文件头无效、不完整或缺少尺寸标签"
-          },
-        )
+        issues.push(format_error_message(format))
         "\{size} bytes"
       }
     }
@@ -1107,7 +1164,7 @@ pub async fn scan_assets(
   }
 
   for name in entries {
-    if raster_format(name) is Some(_) {
+    if image_format(name) is Some(_) {
       let mut expected = false
       for spec in manifest.assets {
         if spec.file == name {
