@@ -1,0 +1,10 @@
+import {
+  "hxiuzheng/media-pack-audit" @audit,
+  "moonbitlang/core/json",
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+}
+
+supported_targets = "+native"
+
+pkgtype(kind: "executable")

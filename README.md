@@ -31,12 +31,19 @@
 
 当前版本递归检查素材目录中的 PNG、JPEG、WebP、GIF、BMP、TIFF、SVG、AVIF、JP2、ICO 和 PSD；扩展名接受 `.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.bmp`、`.tif`、`.tiff`、`.svg`、`.avif`、`.jp2`、`.ico`、`.cur`、`.psd`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF（存在有效 EXIF Orientation 时换算成显示方向）、WebP 的 VP8/VP8L 头或 VP8X 画布字段、GIF 逻辑屏幕描述符、BMP 的 DIB 尺寸头、TIFF 的 ImageWidth/ImageLength 标签、SVG 的 width/height 属性或 viewBox（仅整数）、AVIF 的 ispe 属性盒、JPEG 2000 的 ihdr 盒、ICO/CUR 首项目录项以及 PSD 头。WebP 检查 RIFF 声明长度、块边界、必需的图像数据块和零填充，但不解析完整扩展元数据语义或动画帧数据。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。WebP 字段依据 [Google WebP 容器规范](https://developers.google.com/speed/webp/docs/riff_container)、[VP8 数据格式规范（RFC 6386）](https://datatracker.ietf.org/doc/html/rfc6386) 与 [WebP Lossless Bitstream 规范](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification)。JPEG 元数据扫描最多读取文件开头 4 MiB；没有有效 EXIF Orientation 时，报告沿用 SOF 中存储的宽高。GIF 只检查画布宽高，不读取帧数或动画时序。对于未超过 `max_bytes` 的受支持图片，工具会以 64 KiB 缓冲区读取完整文件并记录 SHA-256；这可能需要比读取尺寸头更长的时间。超限文件显示 `—`，表示未计算哈希，但 PNG CRC 与结构检查仍会流式读取整个 PNG，WebP RIFF 检查仍会逐块读取块头和奇数长度填充字节。SHA-256 依赖固定版本 `moonbitlang/x@0.5.5` 的 [crypto 包](https://github.com/moonbitlang/x/tree/main/crypto)；该模块属于实验性包，项目锁定版本并只用其哈希功能。指纹仅用于内容比对，不是来源认证或数字签名。工具不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
 
-## 与同类项目的区别
+## 生态调研与复用取舍
 
-片盒点检只做"验收"，不做"生成"。MoonBit 生态里有两个相邻但方向不同的项目：`moonbit-posterkit` 是一个数据驱动的海报和封面生成 DSL，用模板和布局把数据渲染成 SVG 海报、封面和社媒卡片；MoonBitMark 则把文档和图片转换成 Markdown。它们的共同点是"生产或转换图片"，而片盒点检做的是"核对已经交付的图片"——它不解码像素、不改动输入文件、不产出任何图片，只对照清单检查交付的素材是否缺图、尺寸不对、超限或有未登记文件。
+本项目按实际职责比较相邻实现，并复用可直接替代的通用算法：
 
-这也决定了三者的关系是互补而不是替代：可以用 posterkit 生成海报、用 MoonBitMark 做文档配图，再在最终交付前用片盒点检对整包素材做一次可重复、可留档的验收。
+| 项目/组件 | 已有能力 | 与片盒点检的关系与取舍 |
+|---|---|---|
+| [Pillow](https://pillow.readthedocs.io/en/stable/handbook/tutorial.html) | `Image.open()` 识别图像并提供尺寸、格式等属性；完整产品也支持像素解码和编辑 | 借鉴“先读格式与元数据”的使用流程；不移植 Python 实现，也不引入完整像素解码，因为本项目只做交付规格预检 |
+| [mizchi/image](https://mooncakes.io/docs/mizchi/image) | PNG/BMP/JPEG 解码与编码，以及部分格式编码、缩放；解码结果为 RGBA 像素数据 | 面向编解码和图像处理。使用它获取尺寸会进入解码路径；本项目读取交付所需的容器元数据，并为格式差异做受限解析 |
+| [gmlewis/moonbit-image](https://github.com/gmlewis/moonbit-image) | 基于 Go `image` 的简单 MoonBit 图像表示 | 面向图像数据表示；没有本项目需要的素材清单、目录验收与报告流程 |
+| [hanbings/fluorescence](https://github.com/hanbings/fluorescence) | 仓库说明了 MoonBit BMP/PNG 读取及图像模糊、取色等能力 | 覆盖部分格式与图像处理，不包含本项目的素材包验收流程；不将其描述为没有图像读取能力 |
+| [gmlewis/crc32](https://mooncakes.io/docs/gmlewis/crc32) / [moonbitlang/x/crypto](https://github.com/moonbitlang/x/tree/main/crypto) | CRC-32 与 SHA-256 通用算法 | 项目直接依赖前者验证 PNG CRC，依赖后者计算内容指纹，不重复实现哈希算法 |
 
+MoonBit 生态中的图像库已经能承担像素解码、编码与处理；片盒点检把规格清单、目录对照、内容格式提示与可归档报告组合成独立可依赖的库。它可接在 posterkit 生成或 MoonBitMark 转换后的交付环节，承担最终规格核对。
 ## 快速开始
 
 需要已安装 [MoonBit 工具链](https://www.moonbitlang.com/download/) 与可联网下载项目依赖的环境。本 CLI 使用主机文件系统，当前运行目标为 `native`（仓库已将其设为默认目标）。在仓库根目录运行：
@@ -101,6 +108,12 @@ Start-Process .\report\report.html
 moon add hxiuzheng/media-pack-audit
 ```
 
+仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，读取 JSON 清单、调用 `scan_assets`，并从 `AuditReport` 生成 HTML/JSON。仓库根目录执行：
+
+```sh
+moon run --target native examples/library_consumer
+```
+
 在 `moon.pkg` 中引入并起别名：
 
 ```moonbit
@@ -113,7 +126,7 @@ import {
 
 - 尺寸解析：`png_dimensions` / `jpeg_dimensions` / `webp_dimensions` / `gif_dimensions` / `bmp_dimensions` / `tiff_dimensions` / `svg_dimensions` / `avif_dimensions` / `jp2_dimensions` / `ico_dimensions` / `psd_dimensions`，均接收 `Bytes` 返回 `(Int, Int)?`；
 - 内容格式识别：`detect_content_format(bytes)` 按文件头返回 `ImageFormat?`，`format_name(format)` 取规范小写名；
-- 清单校验：`scan_assets(asset_dir, manifest, manifest_sha256)` 返回 `AuditReport`；
+- 清单读取与校验：`parse_manifest_json(text)` 拒绝重复键、未知字段和无效规格，返回 `Manifest` 或抛出 `ManifestParseError`；`scan_assets(asset_dir, manifest, manifest_sha256)` 返回 `AuditReport`；
 - 报告生成：`render_html(report)` 生成中文 HTML，`AuditReport` 实现 `ToJson` 生成机器可读 JSON；
 - 起步清单：`scaffold_manifest(asset_dir)` 从目录生成 `ScaffoldResult`；
 - 通用工具：`sha256_bytes`、`parse_aspect` / `matches_aspect`、`closest_match`、`html_escape`。

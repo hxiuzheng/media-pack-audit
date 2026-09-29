@@ -16,7 +16,9 @@
 
 ## 技术实现与赛事匹配
 
-核心检查逻辑、报告和命令行入口均以 MoonBit 实现，使用 MoonBit 的文件与 JSON 能力。项目以可复用库为核心，命令行入口只是薄消费端；架构借鉴 pillow 的「魔数识别 + 惰性读头」思想，并刻意不提供像素解码。通用底层能力直接复用成熟库而不重复造轮子：SHA-256 复用 moonbitlang/x/crypto，CRC-32 复用 gmlewis/crc32。CI 在 Ubuntu 和 Windows 上执行格式检查、无警告检查、单元测试和 CLI 端到端回归。项目采用 Apache-2.0 许可证；开发过程中使用了 Codex 辅助实现，具体范围在 README 与开发记录中披露。
+核心解析、清单扫描和报告生成以 MoonBit 实现，CLI 负责参数、清单文件读取和报告落盘。根包公开格式尺寸读取、内容格式识别、严格的 `parse_manifest_json`、`scan_assets`、`scaffold_manifest` 和报告 API；CLI 导入根包，另有 `examples/library_consumer` 作为独立包直接导入并调用库接口。可从仓库根目录运行 `moon run --target native examples/library_consumer` 查看这条消费路径。主机文件系统读写由 `moonbitlang/async/fs` 提供；SHA-256 由 `moonbitlang/x/crypto` 提供；PNG CRC-32 由 `gmlewis/crc32` 提供。图像容器头的元数据读取是本项目范围内的格式适配代码，不声称移植 Pillow，也不将这些格式解析器包装成完整解码器。
+
+生态调研按能力边界做取舍：Pillow 提供通用图像打开、格式识别及图像处理流程，本项目借鉴“识别格式后读取元数据”的使用思路，不移植 Python 实现；`gmlewis/moonbit-image` 的公开说明将其定位为基于 Go 的图像表示，`hanbings/fluorescence` 展示 BMP/PNG 读取及图像处理能力。它们覆盖的目标与本项目的只读交付校验不完全相同。对可直接复用且职责明确的通用算法，本项目采用成熟 MoonBit 包；对需要与素材清单、目录路径、交付报告结合的工作流，则由本库提供适配。链接与复用说明见 README「生态调研与复用取舍」一节。
 
 ## 当前验证证据与边界
 
@@ -33,5 +35,3 @@
 ## 选题区分
 
 片盒点检只做“验收”，不做“生成”。MoonBit 生态里有两个相邻但方向不同的项目：`moonbit-posterkit` 是数据驱动的海报和封面生成 DSL，用模板和布局把数据渲染成 SVG 海报、封面和社媒卡片；MoonBitMark 把文档和图片转换成 Markdown。它们的共同点是“生产或转换图片”，而片盒点检做的是“核对已经交付的图片”——不解码像素、不改动输入文件、不产出任何图片，只对照清单检查交付素材是否缺图、尺寸不对、超限或有未登记文件。三者是互补而不是替代：可以用 posterkit 生成海报、用 MoonBitMark 做文档配图，再在最终交付前用片盒点检对整包素材做一次可重复、可留档的验收。
-
-生态里还有 `mizchi/image`、`Nanaloveyuki/image`、`gmlewis/moonbit-image` 等负责“解码像素 / 图像处理”的库；片盒点检与它们正交互补（只读元数据、不解码像素），并在通用底层算法上直接复用成熟库（SHA-256 用 moonbitlang/x/crypto、CRC-32 用 gmlewis/crc32），避免重复造轮子。
