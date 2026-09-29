@@ -4,9 +4,7 @@ async fn main {
   let manifest_path = "examples/library_consumer/media-pack.json"
   let asset_dir = "examples/clean/assets"
   let manifest_bytes = @fs.read_file(manifest_path)
-  let manifest = @audit.parse_manifest_json(manifest_bytes.text()) catch {
-    error => raise error
-  }
+  let manifest = @audit.parse_manifest_json(manifest_bytes.text())
   let manifest_sha256 = @audit.sha256_bytes(manifest_bytes.binary())
   let report = @audit.scan_assets(asset_dir, manifest, manifest_sha256)
   let json_report = @json.to_json(report).stringify()
