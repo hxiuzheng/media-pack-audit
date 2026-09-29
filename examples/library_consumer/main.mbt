@@ -13,7 +13,9 @@ async fn main {
   @fs.mkdir(output_dir, recursive=true)
   @fs.write_file("\{output_dir}/report.json", json_report)
   @fs.write_file("\{output_dir}/report.html", html_report)
-  if report.checked == 0 || report.passed != report.checked || report.failed != 0 {
+  if report.checked == 0 ||
+    report.passed != report.checked ||
+    report.failed != 0 {
     raise Failure::Failure(
       "库消费示例预期所有已登记素材通过，实际 checked=\{report.checked}, passed=\{report.passed}, failed=\{report.failed}",
     )
