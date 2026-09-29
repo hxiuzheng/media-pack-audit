@@ -875,6 +875,9 @@ pub(all) enum ImageFormat {
 } derive(Eq)
 
 ///|
+pub extend ImageFormat with Eq::{not_equal, equal}
+
+///|
 pub fn image_format(name : String) -> ImageFormat? {
   let lower_name = name.to_lower()
   if lower_name.has_suffix(".png") {

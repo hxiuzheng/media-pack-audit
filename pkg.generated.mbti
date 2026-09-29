@@ -102,6 +102,8 @@ pub(all) enum ImageFormat {
   Ico
   Psd
 } derive(Eq)
+pub fn ImageFormat::equal(Self, Self) -> Bool
+pub fn ImageFormat::not_equal(Self, Self) -> Bool
 
 pub(all) struct Manifest {
   assets : Array[AssetSpec]
