@@ -9,7 +9,7 @@
 - 将内部 `RasterFormat` 重命名为公开的 `ImageFormat`，并暴露 `image_format`（扩展名映射）与 `format_name`（规范名称）两个公开函数，为后续清单脚手架与 `format` 断言复用。
 - 新增 `examples/formats` 样例（SVG/AVIF/JP2/ICO/PSD 全部通过），并在 CLI smoke 中加入对应端到端断言。真实样例由 Pillow 生成 AVIF/JP2/ICO，PSD 为最小头样例。
 - 已知边界如实保留：SVG 只接受整数宽高、不解析 CSS 继承；ICO/CUR 只读首项目录项；AVIF/JP2 只读容器尺寸盒、不解码码流；PSD 只读头部。这些边界已同步到 README 与项目简介。
-- 本轮由 AI 辅助实现与验证；格式盒结构与真实文件的边界（如 Pillow 生成的 AVIF 中 `iprp`/`ipco` 为普通盒而 `meta`/`ispe` 为 FullBox）通过读取真实样例字节确认并修正。最终仍需参赛者本人复核源码并理解每项限制。
+- 本轮由 AI 辅助实现与验证；格式盒结构与真实文件的边界（如 Pillow 生成的 AVIF 中 `iprp`/`ipco` 为普通盒而 `meta`/`ispe` 为 FullBox）通过读取真实样例字节确认并修正。
 
 验证命令与结果（Windows 本机，MoonBit `0.1.20260915`）：
 
@@ -28,7 +28,7 @@ moon run --target native scripts/cli_smoke.mbtx
 - 新增库级 `scaffold_manifest`：递归扫描素材目录，复用 `image_format` 与 `read_image_dimensions` 读取每张受支持图片的宽高与大小，生成确定性缩进的起步 `media-pack.json`；`max_bytes` 默认为实际大小两倍（至少 1 KiB），无法读取尺寸的文件被跳过并回传列表。
 - `init` 子命令把结果写入 `--output`（默认 `media-pack.json`），若目标已存在则拒绝覆盖并给出中文提示，避免破坏手工修改过的清单。起步清单仅含自动读取的 `file`/`width`/`height`/`max_bytes`，`label`/`aspect`/`expected_sha256` 等需人工补充。
 - 新增 `manifest.mbt`（含 `json_escape`、`render_asset_entry` 单测），CLI smoke 增加 init 生成、生成清单回测通过、重复写入拒绝三段端到端断言。
-- 本轮由 AI 辅助实现与验证；子命令分发、`default_subcommand` 兼容性与 argparse 的 `Matches` 结构通过阅读 MoonBit core argparse 源码与既有测试确认。最终仍需参赛者本人复核并理解改动。
+- 本轮由 AI 辅助实现与验证；子命令分发、`default_subcommand` 兼容性与 argparse 的 `Matches` 结构通过阅读 MoonBit core argparse 源码与既有测试确认。
 
 验证命令与结果（Windows 本机，MoonBit `0.1.20260915`）：
 
@@ -49,7 +49,7 @@ moon run --target native scripts/cli_smoke.mbtx
 - 新增 `suggest.mbt`：用 Levenshtein 编辑距离为未知清单字段给出“你是不是想写 X？”建议，仅当候选足够接近时才提示，避免误导。
 - `AssetSpec` 新增 `min_bytes`/`format` 字段（可选，兼容旧清单）；`ImageFormat` 增加 `Eq` 派生以支持格式比较。
 - 新增 3 个无效清单样例（小数/零 min_bytes、非法 format），CLI smoke 增加 min_bytes 下限、format 断言通过与不匹配、扩展名与内容不符三段端到端断言；单测增至 53 项。
-- 本轮由 AI 辅助实现与验证；内容识别的各格式魔法字节与 AVIF/JP2 盒结构边界通过阅读既有解析器与真实样例字节确认。最终仍需参赛者本人复核源码并理解每项限制。
+- 本轮由 AI 辅助实现与验证；内容识别的各格式魔法字节与 AVIF/JP2 盒结构边界通过阅读既有解析器与真实样例字节确认。
 
 验证命令与结果（Windows 本机，MoonBit `0.1.20260915`）：
 
