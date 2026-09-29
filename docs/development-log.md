@@ -9,7 +9,7 @@
 - 修正过时的“全部验收/绝对安全”措辞，区分规格预检与完整图像解码/视觉验收，并说明真实素材试用仅覆盖 4 张 JPEG。
 - 将 `464551b` 人工复核签字明确限定为历史版本，并为本轮留下待申报人亲自完成的复核项。Codex 辅助本轮代码与材料修订；未代替申报人勾选或签字。
 - 验证过程中，CI 先指出示例中原样重抛异常的 catch-all 不必要；后续运行又指出输出路径字符串未使用 MoonBit 插值语法，及示例只列出一张图片却扫描完整六项素材目录。现已移除冗余 catch-all、修正路径插值，并改用完整通过清单且断言所有已登记素材均通过；不把编译通过误当作端到端通过。
-- `moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx` 与 `git diff --check` 本机通过；本机 `moon check` / `moon test` / `moon info` 因 MoonBit 标准库预构建 `prelude.mi` 缺失和未安装 C 编译器未能完成。双平台 CI 尚待最终修订验证，届时补录确切结果。
+- `moon fmt --check` 与 `git diff --check` 本机通过；本机 `moon check` / `moon test` / `moon info` 因 MoonBit 标准库预构建 `prelude.mi` 缺失和未安装 C 编译器未能完成。代码基准 `ed2a4a1` 的 [GitHub Actions 运行 #36604563580](https://github.com/hxiuzheng/media-pack-audit/actions/runs/36604563580) 已在 Ubuntu/Windows 全部通过格式检查、无警告检查、53 项原生测试、独立消费示例和 CLI smoke。消费示例两端均实际检查 7 项、7 项通过、0 项失败，并打印有效清单摘要及两份报告路径。
 
 ## 2026-09-29：支持 SVG/AVIF/JP2/ICO/PSD 五种格式的尺寸预检
 
