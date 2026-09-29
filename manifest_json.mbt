@@ -3,7 +3,7 @@ pub suberror ManifestParseError {
   InvalidJson(String)
   DuplicateJsonKey(String)
   InvalidField(String)
-} derive(Debug)
+}
 
 ///|
 /// Parse a manifest while rejecting duplicate keys and unsupported fields.

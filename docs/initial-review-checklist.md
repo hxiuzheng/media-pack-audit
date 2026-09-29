@@ -10,6 +10,8 @@
 | 项目简介 / 一页选题说明 | [`PROJECT_PROPOSAL.md`](../PROJECT_PROPOSAL.md) | 已备 |
 | MoonBit 为主要实现语言 | 核心逻辑、报告和 CLI 均为 `.mbt`；`.mbtx` 仅用于 MoonBit smoke 回归 | 已满足 |
 | 清晰 README 与可运行示例 | [`README.md`](../README.md)、`examples/clean`、`examples/duplicates`、`examples/demo` | 已满足；本机按命令演示 |
+| 可复用库证据 | 根包公开 API、独立 MoonBit 消费端 `examples/library_consumer`；CI 执行消费端并检查其 HTML/JSON 输出路径 | 本轮推送后核对该提交的 Ubuntu/Windows CI |
+| Pillow 与生态复用说明 | 申报书和 README 对 Pillow、MoonBit 图像库做能力对照；`gmlewis/crc32`、`moonbitlang/x/crypto` 复用成熟 CRC/SHA-256 算法 | 说明代码借鉴、依赖复用和自实现边界，不声称 Pillow 是依赖 |
 | 必要测试 | PNG/JPEG/WebP/GIF/BMP/TIFF 尺寸测试；JPEG EXIF Orientation 大小端换算与无效值回退；WebP VP8、VP8L、VP8X 和 RIFF 边界；PNG CRC 与结构边界；总容量预算、宽高比、expected_sha256、未知字段、小数规格、重复 JSON 字段、用途标签、HTML 转义、分块读取、重复内容、递归扫描、路径越界和 CLI smoke | 已有仓库测试与公开 CI 记录 |
 | 跨平台 CI | `.github/workflows/ci.yml` 在 Ubuntu 与 Windows 上执行格式、无警告检查、原生测试和 CLI smoke；具体运行号以当前主分支提交对应的 Actions 记录为准 | 已配置；提交前复核最新运行 |
 | 连续、可追踪的开发过程 | Git 提交历史及 [`docs/development-log.md`](development-log.md) | 已有记录 |

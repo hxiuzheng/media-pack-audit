@@ -44,6 +44,7 @@
 | [gmlewis/crc32](https://mooncakes.io/docs/gmlewis/crc32) / [moonbitlang/x/crypto](https://github.com/moonbitlang/x/tree/main/crypto) | CRC-32 与 SHA-256 通用算法 | 项目直接依赖前者验证 PNG CRC，依赖后者计算内容指纹，不重复实现哈希算法 |
 
 MoonBit 生态中的图像库已经能承担像素解码、编码与处理；片盒点检把规格清单、目录对照、内容格式提示与可归档报告组合成独立可依赖的库。它可接在 posterkit 生成或 MoonBitMark 转换后的交付环节，承担最终规格核对。
+
 ## 快速开始
 
 需要已安装 [MoonBit 工具链](https://www.moonbitlang.com/download/) 与可联网下载项目依赖的环境。本 CLI 使用主机文件系统，当前运行目标为 `native`（仓库已将其设为默认目标）。在仓库根目录运行：
@@ -108,7 +109,7 @@ Start-Process .\report\report.html
 moon add hxiuzheng/media-pack-audit
 ```
 
-仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，读取 JSON 清单、调用 `scan_assets`，并从 `AuditReport` 生成 HTML/JSON。仓库根目录执行：
+仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，读取 JSON 清单、调用 `scan_assets`，将 HTML/JSON 报告实际写入 `_build/library-consumer/`。这验证了独立包对公开 API 的编译期与运行期调用路径；不是外部项目采用或用户反馈的证据。仓库根目录执行：
 
 ```sh
 moon run --target native examples/library_consumer

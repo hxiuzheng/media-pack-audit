@@ -27,6 +27,8 @@ jobs:
         run: moon check --target native --deny-warn
       - name: Test native target
         run: moon test --target native
+      - name: Run independent library consumer example
+        run: moon run --target native examples/library_consumer
       - name: Smoke-test CLI exit codes and reports
         run: moon run --target native scripts/cli_smoke.mbtx
 
@@ -52,5 +54,7 @@ jobs:
         run: moon check --target native --deny-warn
       - name: Test native target
         run: moon test --target native
+      - name: Run independent library consumer example
+        run: moon run --target native examples/library_consumer
       - name: Smoke-test CLI exit codes and reports
         run: moon run --target native scripts/cli_smoke.mbtx

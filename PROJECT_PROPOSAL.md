@@ -10,21 +10,21 @@
 
 ## 当前方案与可验证范围
 
-用户提供一份 JSON 素材清单和一个素材目录，MoonBit CLI 递归检查清单中的相对路径和目录里的额外图片，校验普通文件、PNG 各块边界与 CRC、IHDR 字段及基本容器结构、JPEG SOF 与有效 EXIF Orientation 换算后的显示尺寸、WebP RIFF 容器与 VP8/VP8L/VP8X 尺寸头、GIF 逻辑屏幕尺寸、BMP DIB 尺寸头、TIFF 的 ImageWidth/ImageLength 标签、SVG 的 width/height 属性或 viewBox、AVIF 的 ispe 属性盒、JPEG 2000 的 ihdr 盒、ICO/CUR 首项目录项、PSD 头、单项与总容量上限，以及重复路径。扩展名大小写不敏感，完整相对路径仍精确匹配。素材项可选填用途标签，报告用课程或社媒角色来识别文件。清单只接受已定义字段，拼写错误或暂不支持的字段会在素材扫描前拒绝，并对相近拼写给出更正建议；尺寸与大小上限必须是整数，小数不截断，避免输入值被静默改写；素材项可选填 aspect，按 W:H 精确核对宽高比，也可选填 min_bytes 体积下限与 format 内容格式断言；工具按文件头识别实际格式，扩展名与内容不符时给出明确提示。尺寸、单项体积或整个目录总容量不符时，报告同时列出清单要求值与实际值，便于定位导出错误。报告与 CLI 摘要记录所用清单原始字节的 SHA-256，可将归档结果对应回当时使用的规格文件；对成功计算 SHA-256 的素材也记录内容指纹，便于交付后核对文件是否变化；清单还可选填预期 SHA-256，发现交付文件与锁定摘要不一致时判为失败。指纹用于内容标识，不提供来源认证；超限文件跳过哈希；相同素材指纹只提示潜在重复，由人工确认是否有意复用。路径拒绝 `..` 越界和反斜线，目录扫描不跟随符号链接。结果生成中文 HTML 与 JSON 报告，输入素材只读。仓库提供全通过、多格式尺寸、潜在重复内容、PNG 损坏、大小写不一致、路径越界和无效清单等样例，可在本机直接重跑。
+用户提供一份 JSON 素材清单和素材目录，由 MoonBit 可复用库递归检查；CLI 和独立 MoonBit 包是库的消费端。校验范围包括普通文件、PNG 各块边界与 CRC、JPEG SOF/EXIF Orientation、WebP RIFF 容器、GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD 尺寸头、清单字段、相对路径、容量与重复路径。素材项可选填用途标签、aspect、min_bytes、format 和 expected_sha256；报告包含要求值、实际值及 HTML/JSON 结果。指纹用于内容比对，不提供来源认证；超限文件跳过哈希；相同指纹只提示潜在重复，由人工确认。工具不解码像素，尺寸头解析不等于完整格式验证。
 
 项目目前支持目录树中的 PNG、JPEG、WebP、GIF、BMP、TIFF、SVG、AVIF、JP2、ICO 和 PSD。PNG 校验每个块的 CRC 及必需的 IHDR/IDAT/IEND 基本结构，但不校验所有块类型各自的语义与排序规则，也不解压图像数据；JPEG 元数据最多扫描文件开头 4 MiB，缺少有效 EXIF Orientation 时沿用 SOF 存储尺寸；WebP 检查 RIFF 块边界、填充和首个图像/画布尺寸头，但不解码 VP8/VP8L 位流，也不核验动画帧语义；GIF 只核对画布尺寸，不检查帧或播放时序；BMP 读取 DIB 头的宽高，不解码像素；TIFF 读取 ImageWidth/ImageLength 标签，不解码像素；SVG 只读 width/height 属性或 viewBox 的整数宽高，不解析 CSS 继承或渲染；AVIF 沿 meta→iprp→ipco→ispe 盒链读取尺寸，不解码 AV1 位流；JPEG 2000 读取 jp2h/ihdr 盒，不解码码流；ICO/CUR 读取首项目录项尺寸；PSD 读取头部宽高。它不解码像素、不判断视觉内容或色彩空间，也不修改素材；这些边界会在报告与 README 中说明。
 
 ## 技术实现与赛事匹配
 
-核心解析、清单扫描和报告生成以 MoonBit 实现，CLI 负责参数、清单文件读取和报告落盘。根包公开格式尺寸读取、内容格式识别、严格的 `parse_manifest_json`、`scan_assets`、`scaffold_manifest` 和报告 API；CLI 导入根包，另有 `examples/library_consumer` 作为独立包直接导入并调用库接口。可从仓库根目录运行 `moon run --target native examples/library_consumer` 查看这条消费路径。主机文件系统读写由 `moonbitlang/async/fs` 提供；SHA-256 由 `moonbitlang/x/crypto` 提供；PNG CRC-32 由 `gmlewis/crc32` 提供。图像容器头的元数据读取是本项目范围内的格式适配代码，不声称移植 Pillow，也不将这些格式解析器包装成完整解码器。
+核心解析、清单扫描和报告生成以 MoonBit 实现，CLI 负责参数、清单文件读取和报告落盘。根包公开格式尺寸读取、内容格式识别、严格的 `parse_manifest_json`、`scan_assets`、`scaffold_manifest` 和报告 API；CLI 导入根包，另有 `examples/library_consumer` 作为独立包直接导入并调用库接口、实际落盘 HTML/JSON 报告。CI 对该消费示例执行运行验证。初审要求的 Pillow/生态复用回应及边界见下方和 README。
 
-生态调研按能力边界做取舍：Pillow 提供通用图像打开、格式识别及图像处理流程，本项目借鉴“识别格式后读取元数据”的使用思路，不移植 Python 实现；`gmlewis/moonbit-image` 的公开说明将其定位为基于 Go 的图像表示，`hanbings/fluorescence` 展示 BMP/PNG 读取及图像处理能力。它们覆盖的目标与本项目的只读交付校验不完全相同。对可直接复用且职责明确的通用算法，本项目采用成熟 MoonBit 包；对需要与素材清单、目录路径、交付报告结合的工作流，则由本库提供适配。链接与复用说明见 README「生态调研与复用取舍」一节。
+Pillow 的 `Image.open()`/`Image.size` 是成熟的按格式读取图像尺寸入口，本项目参考了它的使用目标，并使用 Pillow 生成部分合成回归样本；Pillow 是 Python 图像库，像素加载/处理范围超出 MoonBit 头部预检库的依赖边界，故不作为依赖，也不声称移植其代码。调研的 MoonBit 图像库主要提供解码、图像表示或处理，不能直接替代本项目“只读取尺寸头并执行清单验收”的完整流程。对可复用算法则直接依赖 `gmlewis/crc32` 做 CRC-32、`moonbitlang/x/crypto` 做 SHA-256，不自行实现这两类成熟算法。格式头解析和素材包规则保留为本库的 MoonBit 适配层。生态对照链接见 README「生态调研与复用取舍」。
 
 ## 当前验证证据与边界
 
 当前主分支已提供 PNG、JPEG、WebP、GIF、BMP、TIFF、SVG、AVIF、JP2、ICO 和 PSD 的尺寸预检，以及清单字段校验、路径安全、单项/总容量限制、SHA-256 指纹、宽高比校验、重复内容提示和 HTML/JSON 报告。仓库同时提供通过、格式错误、规格不符、缺失、多余文件和重复内容样例。
 
-项目的自动化证据包括 MoonBit 格式检查、无警告检查、单元测试、CLI 端到端回归和 Ubuntu/Windows CI。另有一次由项目负责人在 Windows 上执行的真实 JPEG 文件试用；该试用验证了真实文件读取和受控规格错误，但规格来自文件实际属性，样本小且没有独立用户反馈，不能表述为行业效果验证。
+项目的自动化证据由当前提交对应的 MoonBit 格式检查、无警告检查、单元测试、独立库消费端、CLI 端到端回归和 Ubuntu/Windows CI 记录支持；历史提交结果不替代当前提交结果。另有一次由项目负责人在 Windows 上执行的真实 JPEG 文件试用；该试用验证了真实文件读取和受控规格错误，但规格来自文件实际属性，样本小且没有独立用户反馈，不能表述为行业效果验证。
 
 当前限制也明确写入 README：工具不解码像素，不判断视觉内容、色彩空间、动画时序或完整格式语义；它是交付规格预检器，不是完整图像解码器或视觉质量审核系统。
 

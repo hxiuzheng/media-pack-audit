@@ -2,6 +2,14 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-09-30：回应初审的可复用库证据与申报材料校正
+
+- 针对组委会认为项目偏向单体应用、可复用性证据不足的意见，强化独立 MoonBit 消费端：示例现在实际写出 HTML/JSON 报告并断言检查结果为 1 项通过；Ubuntu/Windows CI 增加运行该示例的步骤。
+- 针对生态复用意见，在申报书中逐项回应 Pillow 的参考范围、MoonBit 图像库的能力边界和实际依赖复用：CRC-32 使用 `gmlewis/crc32`，SHA-256 使用 `moonbitlang/x/crypto`。没有将 Pillow 代码或 Python 包描述成本项目实现/依赖，也没有把仓库内消费示例包装成外部采用证据。
+- 修正过时的“全部验收/绝对安全”措辞，区分规格预检与完整图像解码/视觉验收，并说明真实素材试用仅覆盖 4 张 JPEG。
+- 将 `464551b` 人工复核签字明确限定为历史版本，并为本轮留下待申报人亲自完成的复核项。Codex 辅助本轮代码与材料修订；未代替申报人勾选或签字。
+- 复核遇到上一提交 CI 的 `Debug` 派生警告失败，删除 `ManifestParseError` 上不需要的 `derive(Debug)`。`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx` 与 `git diff --check` 本轮通过；本机 `moon check` / `moon test` / `moon info` 因 MoonBit 标准库预构建 `prelude.mi` 缺失和未安装 C 编译器，未能完成。待新提交双平台 CI 验证消费端及全量检查后补录确切结果。
+
 ## 2026-09-29：支持 SVG/AVIF/JP2/ICO/PSD 五种格式的尺寸预检
 
 - 格式覆盖从 6 种扩到 11 种：新增 SVG、AVIF（HEIF）、JPEG 2000（JP2）、ICO/CUR、PSD 的尺寸读取，均只读容器/头部元数据、不解码像素。
