@@ -24,7 +24,7 @@ async fn main {
   println(
     "库调用完成：\{report.checked} 项，\{report.passed} 项通过，\{report.failed} 项需处理",
   )
-  println("清单 SHA-256：{report.manifest_sha256}")
+  println("清单 SHA-256：\{report.manifest_sha256}")
   println("JSON 报告：\{output_dir}/report.json")
   println("HTML 报告：\{output_dir}/report.html")
 }
