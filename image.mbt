@@ -5,8 +5,10 @@ pub(all) struct AssetSpec {
   width : Int
   height : Int
   max_bytes : Int
+  min_bytes : Int?
   expected_sha256 : String?
   aspect : String?
+  format : String?
 } derive(FromJson, ToJson)
 
 ///|
@@ -870,7 +872,7 @@ pub(all) enum ImageFormat {
   Jp2
   Ico
   Psd
-}
+} derive(Eq)
 
 ///|
 pub fn image_format(name : String) -> ImageFormat? {
@@ -1068,10 +1070,31 @@ pub async fn scan_assets(
     }
 
     let size = @fs.file_size(path)
+    let content_format = detect_content_format_from_file(path, size)
     let issues : Array[String] = []
     let max_bytes = Int::to_int64(spec.max_bytes)
     if size > max_bytes {
       issues.push("文件大小 \{size} bytes 超出上限 \{max_bytes} bytes")
+    }
+    match spec.min_bytes {
+      Some(minimum) if minimum > 0 && size < Int::to_int64(minimum) =>
+        issues.push("文件大小 \{size} bytes 低于下限 \{minimum} bytes")
+      _ => ()
+    }
+    match (spec.format, content_format) {
+      (Some(expected), Some(actual)) =>
+        match canonical_format(expected) {
+          Some(name) if name != format_name(actual) =>
+            issues.push(
+              "格式断言不匹配（清单要求 \{name}，实际 \{format_name(actual)}）",
+            )
+          _ => ()
+        }
+      (Some(_), None) =>
+        issues.push(
+          "无法识别文件内容格式，无法核对 format 断言",
+        )
+      _ => ()
     }
     let digest = if size <= max_bytes {
       sha256_file(path, size) catch {
@@ -1110,7 +1133,12 @@ pub async fn scan_assets(
     let observed = match dimensions {
       Some((width, height)) => "\{width} × \{height}，\{size} bytes"
       None => {
-        issues.push(format_error_message(format))
+        let message = match content_format {
+          Some(actual) if actual != format =>
+            "扩展名与内容不符（扩展名 \{format_name(format)}，实际 \{format_name(actual)}）"
+          _ => format_error_message(format)
+        }
+        issues.push(message)
         "\{size} bytes"
       }
     }

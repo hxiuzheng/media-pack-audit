@@ -248,7 +248,9 @@ fn first_manifest_field_error(json : Json) -> String? {
     Object(root) =>
       for key, value in root {
         if key != "assets" && key != "max_total_bytes" {
-          return Some("未知字段 \{key}")
+          return Some(
+            unknown_field_message(key, key, ["assets", "max_total_bytes"]),
+          )
         }
         if key == "max_total_bytes" {
           match value {
@@ -270,9 +272,17 @@ fn first_manifest_field_error(json : Json) -> String? {
                         field != "width" &&
                         field != "height" &&
                         field != "max_bytes" &&
+                        field != "min_bytes" &&
                         field != "expected_sha256" &&
-                        field != "aspect" {
-                        return Some("未知字段 assets[\{index}].\{field}")
+                        field != "aspect" &&
+                        field != "format" {
+                        return Some(
+                          unknown_field_message(
+                            "assets[\{index}].\{field}",
+                            field,
+                            asset_field_names(),
+                          ),
+                        )
                       }
                       if field == "expected_sha256" {
                         match field_value {
@@ -299,6 +309,30 @@ fn first_manifest_field_error(json : Json) -> String? {
                             if @audit.parse_aspect(aspect) is None {
                               return Some(
                                 "assets[\{index}].aspect 必须是 W:H 形式的正整数比例",
+                              )
+                            }
+                          _ => ()
+                        }
+                      }
+                      if field == "min_bytes" {
+                        match field_value {
+                          Number(number, ..) if number.floor() != number =>
+                            return Some(
+                              "assets[\{index}].min_bytes 必须是整数",
+                            )
+                          Number(number, ..) if number <= 0 =>
+                            return Some(
+                              "assets[\{index}].min_bytes 必须为正整数",
+                            )
+                          _ => ()
+                        }
+                      }
+                      if field == "format" {
+                        match field_value {
+                          String(format) =>
+                            if @audit.canonical_format(format) is None {
+                              return Some(
+                                "assets[\{index}].format 必须是受支持的格式名（如 png、jpeg、webp、svg）",
                               )
                             }
                           _ => ()
@@ -333,4 +367,25 @@ fn is_hex_character(character : Char) -> Bool {
   (character >= '0' && character <= '9') ||
   (character >= 'a' && character <= 'f') ||
   (character >= 'A' && character <= 'F')
+}
+
+///|
+fn asset_field_names() -> Array[String] {
+  [
+    "file", "label", "width", "height", "max_bytes", "min_bytes", "expected_sha256",
+    "aspect", "format",
+  ]
+}
+
+///|
+fn unknown_field_message(
+  path : String,
+  field : String,
+  candidates : Array[String],
+) -> String {
+  match @audit.closest_match(field, candidates) {
+    Some(suggestion) =>
+      "未知字段 \{path}，你是不是想写 \{suggestion}？"
+    None => "未知字段 \{path}"
+  }
 }

@@ -10,6 +10,12 @@ pub fn avif_dimensions(Bytes) -> (Int, Int)?
 
 pub fn bmp_dimensions(Bytes) -> (Int, Int)?
 
+pub fn canonical_format(String) -> String?
+
+pub fn closest_match(String, Array[String]) -> String?
+
+pub fn detect_content_format(Bytes) -> ImageFormat?
+
 pub fn format_name(ImageFormat) -> String
 
 pub fn gif_dimensions(Bytes) -> (Int, Int)?
@@ -55,8 +61,10 @@ pub(all) struct AssetSpec {
   width : Int
   height : Int
   max_bytes : Int
+  min_bytes : Int?
   expected_sha256 : String?
   aspect : String?
+  format : String?
 } derive(ToJson, @json.FromJson)
 pub fn AssetSpec::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn AssetSpec::to_json(Self) -> Json
@@ -93,7 +101,7 @@ pub(all) enum ImageFormat {
   Jp2
   Ico
   Psd
-}
+} derive(Eq)
 
 pub(all) struct Manifest {
   assets : Array[AssetSpec]

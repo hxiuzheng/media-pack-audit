@@ -42,6 +42,27 @@ moon run --target native scripts/cli_smoke.mbtx
 
 以上均通过；`moon info` 已更新 `.mbti`，新增公开 `scaffold_manifest` 与 `ScaffoldResult`。
 
+## 2026-09-29：新增 min_bytes/format 字段、内容格式识别与拼写建议
+
+- 素材项新增可选 `min_bytes`（体积下限）与 `format`（内容格式断言）；清单校验在扫描前拒绝小数、非正 `min_bytes` 与非受支持 `format` 名。
+- 新增 `content_format.mbt`：按文件头（魔法字节）识别 11 种格式的实际内容，独立于扩展名；`scan_assets` 复用它对文件做内容识别，扩展名与内容不符时给出“扩展名与内容不符（扩展名 X，实际 Y）”的明确提示，`format` 断言则核对实际内容格式与期望值。
+- 新增 `suggest.mbt`：用 Levenshtein 编辑距离为未知清单字段给出“你是不是想写 X？”建议，仅当候选足够接近时才提示，避免误导。
+- `AssetSpec` 新增 `min_bytes`/`format` 字段（可选，兼容旧清单）；`ImageFormat` 增加 `Eq` 派生以支持格式比较。
+- 新增 3 个无效清单样例（小数/零 min_bytes、非法 format），CLI smoke 增加 min_bytes 下限、format 断言通过与不匹配、扩展名与内容不符三段端到端断言；单测增至 53 项。
+- 本轮由 AI 辅助实现与验证；内容识别的各格式魔法字节与 AVIF/JP2 盒结构边界通过阅读既有解析器与真实样例字节确认。最终仍需参赛者本人复核源码并理解每项限制。
+
+验证命令与结果（Windows 本机，MoonBit `0.1.20260915`）：
+
+```text
+moon fmt
+moon fmt --check scripts/cli_smoke.mbtx
+moon check --target native --deny-warn
+moon test --target native        # 53 passed
+moon run --target native scripts/cli_smoke.mbtx
+```
+
+以上均通过；`moon info` 已更新 `.mbti`，新增公开 `detect_content_format`、`canonical_format` 与 `closest_match`。
+
 ## 2026-09-26：统一申报材料与人工复核边界
 
 - README、项目简介、初审清单和 CLI 帮助同步到当前的 PNG/JPEG/WebP/GIF/BMP/TIFF 与 `aspect` 功能范围。
