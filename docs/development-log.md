@@ -22,6 +22,26 @@ moon run --target native scripts/cli_smoke.mbtx
 
 以上均通过；`moon info` 已更新 `.mbti` 接口，新增 11 个公开尺寸函数与 `ImageFormat` 枚举。
 
+## 2026-09-29：新增 init 清单脚手架命令与 check/init 子命令
+
+- 将 CLI 从单一命令重构为根命令加 `check`/`init` 两个子命令，根命令设 `default_subcommand="check"` 保持既有调用 `cmd/main -- manifest assets --output ...` 完全兼容。
+- 新增库级 `scaffold_manifest`：递归扫描素材目录，复用 `image_format` 与 `read_image_dimensions` 读取每张受支持图片的宽高与大小，生成确定性缩进的起步 `media-pack.json`；`max_bytes` 默认为实际大小两倍（至少 1 KiB），无法读取尺寸的文件被跳过并回传列表。
+- `init` 子命令把结果写入 `--output`（默认 `media-pack.json`），若目标已存在则拒绝覆盖并给出中文提示，避免破坏手工修改过的清单。起步清单仅含自动读取的 `file`/`width`/`height`/`max_bytes`，`label`/`aspect`/`expected_sha256` 等需人工补充。
+- 新增 `manifest.mbt`（含 `json_escape`、`render_asset_entry` 单测），CLI smoke 增加 init 生成、生成清单回测通过、重复写入拒绝三段端到端断言。
+- 本轮由 AI 辅助实现与验证；子命令分发、`default_subcommand` 兼容性与 argparse 的 `Matches` 结构通过阅读 MoonBit core argparse 源码与既有测试确认。最终仍需参赛者本人复核并理解改动。
+
+验证命令与结果（Windows 本机，MoonBit `0.1.20260915`）：
+
+```text
+moon fmt
+moon fmt --check scripts/cli_smoke.mbtx
+moon check --target native --deny-warn
+moon test --target native        # 48 passed
+moon run --target native scripts/cli_smoke.mbtx
+```
+
+以上均通过；`moon info` 已更新 `.mbti`，新增公开 `scaffold_manifest` 与 `ScaffoldResult`。
+
 ## 2026-09-26：统一申报材料与人工复核边界
 
 - README、项目简介、初审清单和 CLI 帮助同步到当前的 PNG/JPEG/WebP/GIF/BMP/TIFF 与 `aspect` 功能范围。

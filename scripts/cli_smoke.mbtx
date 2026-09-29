@@ -98,6 +98,52 @@ async fn main {
     )
   }
 
+  let init_output = "_build/cli-smoke/init-manifest.json"
+  if @fs.exists(init_output) {
+    @fs.remove(init_output)
+  }
+  let init_run = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "init", "examples/formats/assets",
+    "--output", init_output,
+  ]).output()
+  if init_run.exit_code() != 0 {
+    raise Failure::Failure(
+      "init should scaffold a manifest, got \{init_run.exit_code()}\n\{init_run.stderr()}",
+    )
+  }
+  let init_manifest = @fs.read_file(init_output).text()
+  if !init_manifest.contains("\"file\": \"logo.svg\"") ||
+    !init_manifest.contains("\"width\": 512") ||
+    !init_manifest.contains("\"height\": 512") ||
+    !init_manifest.contains("\"file\": \"hero.avif\"") ||
+    !init_manifest.contains("\"width\": 640") ||
+    !init_manifest.contains("\"file\": \"favicon.ico\"") ||
+    !init_manifest.contains("\"width\": 32") {
+    raise Failure::Failure(
+      "init manifest should record detected dimensions for each supported image",
+    )
+  }
+  let init_check = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", init_output, "examples/formats/assets",
+    "--output", "_build/cli-smoke/init-check",
+  ]).output()
+  if init_check.exit_code() != 0 {
+    raise Failure::Failure(
+      "the scaffolded manifest should pass check, got \{init_check.exit_code()}",
+    )
+  }
+  let init_overwrite = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "init", "examples/formats/assets",
+    "--output", init_output,
+  ]).output()
+  let init_overwrite_output = init_overwrite.stdout() + init_overwrite.stderr()
+  if init_overwrite.exit_code() != 1 ||
+    !init_overwrite_output.contains("输出路径已存在") {
+    raise Failure::Failure(
+      "init should refuse to overwrite an existing manifest",
+    )
+  }
+
   let oriented_dir = "_build/cli-smoke/jpeg-exif-orientation"
   if !@fs.exists("\{oriented_dir}/assets") {
     @fs.mkdir("\{oriented_dir}/assets", recursive=true)
@@ -566,7 +612,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), init scaffold + round-trip + overwrite guard, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 

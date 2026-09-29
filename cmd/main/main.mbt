@@ -1,10 +1,10 @@
 ///|
-/// Entry point for the CLI or runnable program in this template.
-/// Keep main focused; move logic into the library package.
-/// Run with `moon run cmd/main` from the project root.
+/// Entry point for the media-pack-audit CLI. The root command dispatches to
+/// two subcommands: `check` (the default) audits a manifest against a directory,
+/// and `init` scaffolds a starter manifest from an existing directory.
 async fn main {
-  let command = @argparse.Command(
-    "media-pack-audit",
+  let check = @argparse.Command(
+    "check",
     about="Check a visual asset handoff against a JSON manifest.",
     positionals=[
       @argparse.PositionArg(
@@ -14,7 +14,7 @@ async fn main {
       ),
       @argparse.PositionArg(
         "assets",
-        about="Directory tree containing the delivered PNG/JPEG/WebP/GIF/BMP/TIFF images",
+        about="Directory tree containing the delivered images",
         num_args=@argparse.ValueRange::single(),
       ),
     ],
@@ -27,7 +27,41 @@ async fn main {
       ),
     ],
   )
+  let init = @argparse.Command(
+    "init",
+    about="Generate a starter media-pack.json from an existing asset directory.",
+    positionals=[
+      @argparse.PositionArg(
+        "assets",
+        about="Directory tree containing the delivered images",
+        num_args=@argparse.ValueRange::single(),
+      ),
+    ],
+    options=[
+      @argparse.OptionArg(
+        "output",
+        short='o',
+        about="Path to write the generated manifest",
+        default_values=["media-pack.json"],
+      ),
+    ],
+  )
+  let command = @argparse.Command(
+    "media-pack-audit",
+    about="Check a visual asset handoff against a JSON manifest.",
+    subcommands=[check, init],
+    default_subcommand="check",
+  )
   let matches = command.parse()
+  match matches.subcommand {
+    Some(("init", sub)) => run_init(sub)
+    Some((_, sub)) => run_check(sub)
+    None => run_check(matches)
+  }
+}
+
+///|
+async fn run_check(matches : @argparse.Matches) -> Unit {
   let manifest_path = matches.values["manifest"][0]
   let assets_dir = matches.values["assets"][0]
   let output_dir = matches.values["output"][0]
@@ -101,6 +135,34 @@ async fn main {
       "检查未通过；请根据报告修正素材后重新运行。",
     )
   }
+}
+
+///|
+async fn run_init(matches : @argparse.Matches) -> Unit {
+  let assets_dir = matches.values["assets"][0]
+  let output_path = matches.values["output"][0]
+
+  if !@fs.exists(assets_dir) {
+    raise Failure::Failure("找不到素材目录：\{assets_dir}")
+  }
+  if @fs.kind(assets_dir) != @fs.FileKind::Directory {
+    raise Failure::Failure("素材目录路径必须是目录：\{assets_dir}")
+  }
+  if @fs.exists(output_path) {
+    raise Failure::Failure(
+      "输出路径已存在：\{output_path}；请删除或用 --output 指定新路径，避免覆盖已有清单",
+    )
+  }
+
+  let result = @audit.scaffold_manifest(assets_dir)
+  @fs.write_file(output_path, result.manifest)
+  println("已生成清单：\{output_path}（\{result.generated} 项素材）")
+  for skipped in result.skipped {
+    println("跳过（无法读取尺寸）：\{skipped}")
+  }
+  println(
+    "请按交付要求核对并补充 label、max_bytes 等字段后再运行 check。",
+  )
 }
 
 ///|

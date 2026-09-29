@@ -47,6 +47,14 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 
 命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。CLI 会先确认清单是文件、素材输入是目录；输入路径或清单有问题时给出错误并以非零状态退出。点检完成后，通过时退出码为 `0`；发现素材不合格时仍会先保存两种报告，再返回非零状态，适合接入 CI。
 
+用 `init` 子命令从已有素材目录生成一份起步清单（自动读取每张图的宽高与大小，`max_bytes` 默认为实际大小的两倍、至少 1 KiB）：
+
+```sh
+moon run --target native cmd/main -- init examples/formats/assets --output media-pack.json
+```
+
+生成的清单写入 `media-pack.json`；若该路径已存在会拒绝覆盖，避免破坏手工修改过的清单。起步清单只包含自动读取的宽高和大小上限，`label`、`aspect`、`expected_sha256` 等字段需要人工按交付要求补充。
+
 查看潜在重复内容的独立样例（两个 WebP 字节完全相同；报告提示 SHA-256 相同，但不影响通过状态）：
 
 ```sh
@@ -110,8 +118,9 @@ Start-Process .\report\report.html
 
 - `image.mbt`、`webp.mbt`、`svg.mbt`、`avif.mbt`、`jp2.mbt`、`ico.mbt`、`psd.mbt`：清单类型、各格式尺寸解析与素材点检逻辑。
 - `isobmff.mbt`：AVIF 与 JPEG 2000 共用的 ISO-BMFF 盒结构解析器。
+- `manifest.mbt`：`init` 子命令使用的起步清单生成器。
 - `report.mbt`：HTML 报告及文本转义。
-- `cmd/main`：命令行入口与报告落盘。
+- `cmd/main`：命令行入口、`check`/`init` 子命令与报告落盘。
 - `examples/demo`：可直接运行的多格式错误示例素材包（所有图片都是合成测试夹具）。
 - `examples/clean`：所有规格都通过的素材包。
 - `examples/formats`：SVG/AVIF/JP2/ICO/PSD 五种扩展格式全部通过的素材包。

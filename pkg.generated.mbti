@@ -34,6 +34,8 @@ pub fn psd_dimensions(Bytes) -> (Int, Int)?
 
 pub fn render_html(AuditReport) -> String
 
+pub async fn scaffold_manifest(String) -> ScaffoldResult
+
 pub async fn scan_assets(String, Manifest, String) -> AuditReport
 
 pub fn sha256_bytes(Bytes) -> String
@@ -99,6 +101,12 @@ pub(all) struct Manifest {
 } derive(ToJson, @json.FromJson)
 pub fn Manifest::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn Manifest::to_json(Self) -> Json
+
+pub(all) struct ScaffoldResult {
+  manifest : String
+  generated : Int
+  skipped : Array[String]
+}
 
 // Type aliases
 
