@@ -79,7 +79,7 @@ fn json_escape(value : String) -> String {
         if character < ' ' {
           let code = character.to_int()
           output <+ "\\u00"
-          output <+ code.to_byte().to_hex()
+          output <+ "\{code.to_byte().to_hex()}"
         } else {
           output <+ "\{character}"
         }
