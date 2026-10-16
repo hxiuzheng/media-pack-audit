@@ -231,7 +231,7 @@ async fn main {
     4L
   @fs.write_file(
     "\{package_budget_dir}/media-pack.json",
-    "{\"max_total_bytes\":1,\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":4096}]}",
+    "{\"max_total_bytes\":1,\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":4096},{\"file\":\"subdir/notes.txt\",\"max_bytes\":4096}]}",
   )
   let over_budget = @shell.Cmd("moon", [
     "run",
