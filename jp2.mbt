@@ -4,7 +4,7 @@
 /// top-level `jp2h` header box.
 
 ///|
-pub fn jp2_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn jp2_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   let end = bytes.length()
   // The file must start with the JPEG 2000 signature box (type "jP  ") whose
   // payload is the fixed 0x0D0A870A signature.
@@ -43,7 +43,7 @@ pub fn jp2_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
-async fn read_jp2_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_jp2_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 12L {
     return None
   }

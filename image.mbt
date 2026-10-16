@@ -2,10 +2,10 @@
 pub(all) struct AssetSpec {
   file : String
   label : String?
-  width : Int?
-  height : Int?
-  max_bytes : Int
-  min_bytes : Int?
+  width : Int32?
+  height : Int32?
+  max_bytes : Int32
+  min_bytes : Int32?
   expected_sha256 : String?
   aspect : String?
   format : String?
@@ -20,7 +20,7 @@ pub extend AssetSpec with ToJson::{to_json}
 ///|
 pub(all) struct Manifest {
   assets : Array[AssetSpec]
-  max_total_bytes : Int?
+  max_total_bytes : Int32?
 } derive(FromJson, ToJson)
 
 ///|
@@ -46,9 +46,9 @@ pub extend CheckResult with ToJson::{to_json}
 pub(all) struct AuditReport {
   asset_dir : String
   manifest_sha256 : String
-  checked : Int
-  passed : Int
-  failed : Int
+  checked : Int32
+  passed : Int32
+  failed : Int32
   results : Array[CheckResult]
 } derive(ToJson)
 
@@ -56,7 +56,7 @@ pub(all) struct AuditReport {
 pub extend AuditReport with ToJson::{to_json}
 
 ///|
-pub fn png_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn png_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   if bytes.length() < 33 {
     return None
   }
@@ -107,7 +107,7 @@ fn png_ihdr_crc_is_valid(bytes : Bytes) -> Bool {
 }
 
 ///|
-fn png_crc_matches(crc : UInt, bytes : Bytes, offset : Int) -> Bool {
+fn png_crc_matches(crc : UInt32, bytes : Bytes, offset : Int32) -> Bool {
   bytes[offset] == (crc >> 24).to_byte() &&
   bytes[offset + 1] == (crc >> 16).to_byte() &&
   bytes[offset + 2] == (crc >> 8).to_byte() &&
@@ -117,11 +117,11 @@ fn png_crc_matches(crc : UInt, bytes : Bytes, offset : Int) -> Bool {
 ///|
 /// Check the combinations defined by the PNG IHDR specification.
 fn png_ihdr_fields_are_valid(
-  bit_depth : Int,
-  color_type : Int,
-  compression_method : Int,
-  filter_method : Int,
-  interlace_method : Int,
+  bit_depth : Int32,
+  color_type : Int32,
+  compression_method : Int32,
+  filter_method : Int32,
+  interlace_method : Int32,
 ) -> Bool {
   let valid_bit_depth = match color_type {
     0 =>
@@ -142,13 +142,13 @@ fn png_ihdr_fields_are_valid(
 }
 
 ///|
-pub fn jpeg_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn jpeg_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   if bytes.length() < 4 || bytes[0] != b'\xFF' || bytes[1] != b'\xD8' {
     return None
   }
 
   let mut offset = 2
-  let mut orientation : Int? = None
+  let mut orientation : Int32? = None
   while offset < bytes.length() {
     if bytes[offset] != b'\xFF' {
       return None
@@ -212,9 +212,9 @@ pub fn jpeg_dimensions(bytes : Bytes) -> (Int, Int)? {
 /// unsupported EXIF metadata is ignored so the SOF dimensions remain usable.
 fn jpeg_exif_orientation(
   bytes : Bytes,
-  payload_start : Int,
-  payload_length : Int,
-) -> Int? {
+  payload_start : Int32,
+  payload_length : Int32,
+) -> Int32? {
   if payload_start < 0 ||
     payload_length < 32 ||
     payload_start > bytes.length() - payload_length {
@@ -274,7 +274,7 @@ fn jpeg_exif_orientation(
 }
 
 ///|
-fn read_tiff_u16(bytes : Bytes, offset : Int, little_endian : Bool) -> Int {
+fn read_tiff_u16(bytes : Bytes, offset : Int32, little_endian : Bool) -> Int32 {
   if little_endian {
     read_little_endian_u16(bytes, offset)
   } else {
@@ -286,10 +286,10 @@ fn read_tiff_u16(bytes : Bytes, offset : Int, little_endian : Bool) -> Int {
 /// TIFF offsets must fit within a JPEG APP1 segment (at most 64 KiB).
 fn read_tiff_u32_bounded(
   bytes : Bytes,
-  offset : Int,
-  end : Int,
+  offset : Int32,
+  end : Int32,
   little_endian : Bool,
-) -> Int? {
+) -> Int32? {
   if offset < 0 || offset + 4 > end {
     return None
   }
@@ -307,7 +307,7 @@ fn read_tiff_u32_bounded(
 }
 
 ///|
-fn tiff_u32_is_one(bytes : Bytes, offset : Int, little_endian : Bool) -> Bool {
+fn tiff_u32_is_one(bytes : Bytes, offset : Int32, little_endian : Bool) -> Bool {
   if little_endian {
     bytes[offset] == b'\x01' &&
     bytes[offset + 1] == b'\x00' &&
@@ -323,7 +323,7 @@ fn tiff_u32_is_one(bytes : Bytes, offset : Int, little_endian : Bool) -> Bool {
 
 ///|
 /// Return the GIF87a/GIF89a logical screen dimensions without decoding image data.
-pub fn gif_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn gif_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   if bytes.length() < 13 {
     return None
   }
@@ -343,7 +343,7 @@ pub fn gif_dimensions(bytes : Bytes) -> (Int, Int)? {
 /// Read the pixel dimensions from a BMP file header without decoding pixel data.
 /// Supports BITMAPINFOHEADER (and later headers) plus the legacy BITMAPCOREHEADER.
 /// A negative height (top-down DIB) is reported as its absolute value.
-pub fn bmp_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn bmp_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   if bytes.length() < 26 {
     return None
   }
@@ -355,8 +355,8 @@ pub fn bmp_dimensions(bytes : Bytes) -> (Int, Int)? {
     (read_little_endian_u32(bytes, 18), read_little_endian_i32(bytes, 22))
   } else if dib_size >= 12L {
     (
-      Int::to_int64(read_little_endian_u16(bytes, 18)),
-      Int::to_int64(read_little_endian_u16(bytes, 20)),
+      Int32::to_int64(read_little_endian_u16(bytes, 18)),
+      Int32::to_int64(read_little_endian_u16(bytes, 20)),
     )
   } else {
     return None
@@ -376,7 +376,7 @@ pub fn bmp_dimensions(bytes : Bytes) -> (Int, Int)? {
 /// Read the pixel dimensions from a TIFF header (ImageWidth / ImageLength tags)
 /// without decoding pixel data. Supports little-endian ("II") and big-endian
 /// ("MM") byte order, and both SHORT and LONG tag value types.
-pub fn tiff_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn tiff_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   if bytes.length() < 8 {
     return None
   }
@@ -391,7 +391,7 @@ pub fn tiff_dimensions(bytes : Bytes) -> (Int, Int)? {
     return None
   }
   let ifd_offset = read_tiff_u32(bytes, 4, little_endian)
-  if ifd_offset < 0L || ifd_offset >= Int::to_int64(bytes.length()) {
+  if ifd_offset < 0L || ifd_offset >= Int32::to_int64(bytes.length()) {
     return None
   }
   let ifd = Int64::to_int(ifd_offset)
@@ -399,8 +399,8 @@ pub fn tiff_dimensions(bytes : Bytes) -> (Int, Int)? {
     return None
   }
   let entry_count = read_tiff_u16(bytes, ifd, little_endian)
-  let mut width : Int? = None
-  let mut height : Int? = None
+  let mut width : Int32? = None
+  let mut height : Int32? = None
   for index in 0..<entry_count {
     let entry = ifd + 2 + index * 12
     if entry + 12 > bytes.length() {
@@ -410,7 +410,7 @@ pub fn tiff_dimensions(bytes : Bytes) -> (Int, Int)? {
     if tag == 256 || tag == 257 {
       let field_type = read_tiff_u16(bytes, entry + 2, little_endian)
       let value = match field_type {
-        3 => Int::to_int64(read_tiff_u16(bytes, entry + 8, little_endian))
+        3 => Int32::to_int64(read_tiff_u16(bytes, entry + 8, little_endian))
         4 => read_tiff_u32(bytes, entry + 8, little_endian)
         _ => return None
       }
@@ -435,7 +435,7 @@ pub fn tiff_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
-fn read_tiff_u32(bytes : Bytes, offset : Int, little_endian : Bool) -> Int64 {
+fn read_tiff_u32(bytes : Bytes, offset : Int32, little_endian : Bool) -> Int64 {
   if little_endian {
     read_little_endian_u32(bytes, offset)
   } else {
@@ -444,25 +444,25 @@ fn read_tiff_u32(bytes : Bytes, offset : Int, little_endian : Bool) -> Int64 {
 }
 
 ///|
-fn read_big_endian_u16(bytes : Bytes, offset : Int) -> Int {
+fn read_big_endian_u16(bytes : Bytes, offset : Int32) -> Int32 {
   bytes[offset].to_int() * 256 + bytes[offset + 1].to_int()
 }
 
 ///|
-fn read_little_endian_u16(bytes : Bytes, offset : Int) -> Int {
+fn read_little_endian_u16(bytes : Bytes, offset : Int32) -> Int32 {
   bytes[offset].to_int() + bytes[offset + 1].to_int() * 256
 }
 
 ///|
-fn read_little_endian_u32(bytes : Bytes, offset : Int) -> Int64 {
-  Int::to_int64(bytes[offset].to_int()) +
-  Int::to_int64(bytes[offset + 1].to_int()) * 256L +
-  Int::to_int64(bytes[offset + 2].to_int()) * 65536L +
-  Int::to_int64(bytes[offset + 3].to_int()) * 16777216L
+fn read_little_endian_u32(bytes : Bytes, offset : Int32) -> Int64 {
+  Int32::to_int64(bytes[offset].to_int()) +
+  Int32::to_int64(bytes[offset + 1].to_int()) * 256L +
+  Int32::to_int64(bytes[offset + 2].to_int()) * 65536L +
+  Int32::to_int64(bytes[offset + 3].to_int()) * 16777216L
 }
 
 ///|
-fn read_little_endian_i32(bytes : Bytes, offset : Int) -> Int64 {
+fn read_little_endian_i32(bytes : Bytes, offset : Int32) -> Int64 {
   let value = read_little_endian_u32(bytes, offset)
   if value >= 2147483648L {
     value - 4294967296L
@@ -472,11 +472,11 @@ fn read_little_endian_i32(bytes : Bytes, offset : Int) -> Int64 {
 }
 
 ///|
-fn read_big_endian_u32(bytes : Bytes, offset : Int) -> Int64 {
-  Int::to_int64(bytes[offset].to_int()) * 16777216L +
-  Int::to_int64(bytes[offset + 1].to_int()) * 65536L +
-  Int::to_int64(bytes[offset + 2].to_int()) * 256L +
-  Int::to_int64(bytes[offset + 3].to_int())
+fn read_big_endian_u32(bytes : Bytes, offset : Int32) -> Int64 {
+  Int32::to_int64(bytes[offset].to_int()) * 16777216L +
+  Int32::to_int64(bytes[offset + 1].to_int()) * 65536L +
+  Int32::to_int64(bytes[offset + 2].to_int()) * 256L +
+  Int32::to_int64(bytes[offset + 3].to_int())
 }
 
 ///|
@@ -516,7 +516,7 @@ fn is_jpeg_start_of_frame(marker : Byte) -> Bool {
 }
 
 ///|
-fn read_png_dimension(bytes : Bytes, offset : Int) -> Int? {
+fn read_png_dimension(bytes : Bytes, offset : Int32) -> Int32? {
   let first = bytes[offset].to_int()
   if first >= 128 {
     return None
@@ -544,7 +544,7 @@ async fn sha256_file(path : String, size : Int64) -> String? {
     }
     let block = file.read_exactly_at(block_size, position=offset)
     hasher.update(block)
-    offset += Int::to_int64(block_size)
+    offset += Int32::to_int64(block_size)
   }
   if @fs.file_size(path) != size {
     return None
@@ -580,7 +580,7 @@ fn normalize_sha256(value : String) -> String {
 
 ///|
 /// Parse an aspect ratio string "W:H" into its positive integer parts.
-pub fn parse_aspect(value : String) -> (Int, Int)? {
+pub fn parse_aspect(value : String) -> (Int32, Int32)? {
   let chars = value.to_array()
   let mut colon = -1
   let mut index = 0
@@ -605,7 +605,11 @@ pub fn parse_aspect(value : String) -> (Int, Int)? {
 }
 
 ///|
-fn parse_positive_int(chars : Array[Char], start : Int, end : Int) -> Int? {
+fn parse_positive_int(
+  chars : Array[Char],
+  start : Int32,
+  end : Int32,
+) -> Int32? {
   if start >= end {
     return None
   }
@@ -625,14 +629,19 @@ fn parse_positive_int(chars : Array[Char], start : Int, end : Int) -> Int? {
 
 ///|
 /// Check whether width × height matches the aspect ratio aw:ah exactly.
-pub fn matches_aspect(width : Int, height : Int, aw : Int, ah : Int) -> Bool {
-  Int::to_int64(width) * Int::to_int64(ah) ==
-  Int::to_int64(height) * Int::to_int64(aw)
+pub fn matches_aspect(
+  width : Int32,
+  height : Int32,
+  aw : Int32,
+  ah : Int32,
+) -> Bool {
+  Int32::to_int64(width) * Int32::to_int64(ah) ==
+  Int32::to_int64(height) * Int32::to_int64(aw)
 }
 
 ///|
-async fn read_png_dimensions(path : String, size : Int64) -> (Int, Int)? {
-  if size < Int::to_int64(33) {
+async fn read_png_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
+  if size < Int32::to_int64(33) {
     return None
   }
   let file = @fs.open(path, mode=@fs.ReadOnly)
@@ -719,7 +728,7 @@ async fn png_chunks_are_valid(file : @fs.File, size : Int64) -> Bool {
       for index in 0..<block.length() {
         digest.write(block[index])
       }
-      data_offset += Int::to_int64(block_size)
+      data_offset += Int32::to_int64(block_size)
     }
     let stored_crc = file.read_exactly_at(4, position=data_end)
     if !png_crc_matches(digest.digest(), stored_crc, 0) {
@@ -737,14 +746,14 @@ async fn png_chunks_are_valid(file : @fs.File, size : Int64) -> Bool {
 
 ///|
 fn read_png_chunk_length(bytes : Bytes) -> Int64 {
-  Int::to_int64(bytes[0].to_int()) * 16_777_216L +
-  Int::to_int64(bytes[1].to_int()) * 65_536L +
-  Int::to_int64(bytes[2].to_int()) * 256L +
-  Int::to_int64(bytes[3].to_int())
+  Int32::to_int64(bytes[0].to_int()) * 16_777_216L +
+  Int32::to_int64(bytes[1].to_int()) * 65_536L +
+  Int32::to_int64(bytes[2].to_int()) * 256L +
+  Int32::to_int64(bytes[3].to_int())
 }
 
 ///|
-fn is_png_chunk_type(bytes : Bytes, offset : Int) -> Bool {
+fn is_png_chunk_type(bytes : Bytes, offset : Int32) -> Bool {
   for index in offset..<(offset + 4) {
     let value = bytes[index].to_int()
     let is_uppercase = value >= b'A'.to_int() && value <= b'Z'.to_int()
@@ -767,7 +776,7 @@ fn png_chunk_type_is(bytes : Bytes, name : Bytes) -> Bool {
 }
 
 ///|
-async fn read_jpeg_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_jpeg_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 4L {
     return None
   }
@@ -784,7 +793,7 @@ async fn read_jpeg_dimensions(path : String, size : Int64) -> (Int, Int)? {
 }
 
 ///|
-async fn read_gif_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_gif_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 13L {
     return None
   }
@@ -795,7 +804,7 @@ async fn read_gif_dimensions(path : String, size : Int64) -> (Int, Int)? {
 }
 
 ///|
-async fn read_bmp_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_bmp_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 26L {
     return None
   }
@@ -806,7 +815,7 @@ async fn read_bmp_dimensions(path : String, size : Int64) -> (Int, Int)? {
 }
 
 ///|
-async fn read_tiff_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_tiff_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 8L {
     return None
   }
@@ -899,7 +908,7 @@ async fn read_image_dimensions(
   format : ImageFormat,
   path : String,
   size : Int64,
-) -> (Int, Int)? {
+) -> (Int32, Int32)? {
   match format {
     ImageFormat::Png => read_png_dimensions(path, size)
     ImageFormat::Jpeg => read_jpeg_dimensions(path, size)
@@ -1038,12 +1047,12 @@ pub async fn scan_assets(
       (None, None) => None
     }
     let issues : Array[String] = []
-    let max_bytes = Int::to_int64(spec.max_bytes)
+    let max_bytes = Int32::to_int64(spec.max_bytes)
     if size > max_bytes {
       issues.push("文件大小 \{size} bytes 超出上限 \{max_bytes} bytes")
     }
     match spec.min_bytes {
-      Some(minimum) if minimum > 0 && size < Int::to_int64(minimum) =>
+      Some(minimum) if minimum > 0 && size < Int32::to_int64(minimum) =>
         issues.push("文件大小 \{size} bytes 低于下限 \{minimum} bytes")
       _ => ()
     }
@@ -1117,7 +1126,9 @@ pub async fn scan_assets(
         }
       }
       (None, None) if spec.width is Some(_) || spec.aspect is Some(_) =>
-        issues.push("尺寸和宽高比规则只适用于受支持的图像文件")
+        issues.push(
+          "尺寸和宽高比规则只适用于受支持的图像文件",
+        )
       _ => ()
     }
     let observed = match dimensions {
@@ -1125,11 +1136,12 @@ pub async fn scan_assets(
       None => "\{size} bytes"
     }
     match (spec.width, spec.height, dimensions) {
-      (Some(expected_width), Some(expected_height), Some((width, height)))
-        if width != expected_width || height != expected_height =>
-          issues.push(
-            "尺寸不匹配（清单要求 \{expected_width} × \{expected_height}，实际 \{width} × \{height}）",
-          )
+      (Some(expected_width), Some(expected_height), Some((width, height))) if width !=
+        expected_width ||
+        height != expected_height =>
+        issues.push(
+          "尺寸不匹配（清单要求 \{expected_width} × \{expected_height}，实际 \{width} × \{height}）",
+        )
       _ => ()
     }
     match (dimensions, spec.aspect) {
@@ -1187,7 +1199,9 @@ pub async fn scan_assets(
         let size = @fs.file_size(path)
         let is_image = image_format(name) is Some(_)
         let digest = if is_image {
-          sha256_file(path, size) catch { _ => None }
+          sha256_file(path, size) catch {
+            _ => None
+          }
         } else {
           None
         }
@@ -1231,7 +1245,7 @@ pub async fn scan_assets(
           }
         }
       }
-      let max_total_bytes = Int::to_int64(limit)
+      let max_total_bytes = Int32::to_int64(limit)
       let status = if max_total_bytes > 0 && total_bytes <= max_total_bytes {
         "PASS"
       } else {

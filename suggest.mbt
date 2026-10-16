@@ -31,17 +31,17 @@ pub fn closest_match(value : String, candidates : Array[String]) -> String? {
 
 ///|
 /// Levenshtein edit distance between two strings using a rolling two-row DP.
-fn levenshtein(a : String, b : String) -> Int {
+fn levenshtein(a : String, b : String) -> Int32 {
   let a_chars = a.to_array()
   let b_chars = b.to_array()
   let a_length = a_chars.length()
   let b_length = b_chars.length()
-  let mut previous : Array[Int] = []
+  let mut previous : Array[Int32] = []
   for column in 0..<=b_length {
     previous.push(column)
   }
   for row in 1..<=a_length {
-    let current : Array[Int] = [row]
+    let current : Array[Int32] = [row]
     for column in 1..<=b_length {
       let substitution_cost = if a_chars[row - 1] == b_chars[column - 1] {
         0
@@ -59,7 +59,7 @@ fn levenshtein(a : String, b : String) -> Int {
 }
 
 ///|
-fn min3(first : Int, second : Int, third : Int) -> Int {
+fn min3(first : Int32, second : Int32, third : Int32) -> Int32 {
   if first <= second && first <= third {
     first
   } else if second <= third {

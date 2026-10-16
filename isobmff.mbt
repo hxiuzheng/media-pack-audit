@@ -6,22 +6,22 @@
 
 ///|
 /// Read a big-endian unsigned 32-bit integer.
-fn be_u32(bytes : Bytes, offset : Int) -> Int64 {
-  Int::to_int64(bytes[offset].to_int()) * 16_777_216L +
-  Int::to_int64(bytes[offset + 1].to_int()) * 65_536L +
-  Int::to_int64(bytes[offset + 2].to_int()) * 256L +
-  Int::to_int64(bytes[offset + 3].to_int())
+fn be_u32(bytes : Bytes, offset : Int32) -> Int64 {
+  Int32::to_int64(bytes[offset].to_int()) * 16_777_216L +
+  Int32::to_int64(bytes[offset + 1].to_int()) * 65_536L +
+  Int32::to_int64(bytes[offset + 2].to_int()) * 256L +
+  Int32::to_int64(bytes[offset + 3].to_int())
 }
 
 ///|
 /// Read a big-endian unsigned 64-bit integer (used for the `largesize` field).
-fn be_u64(bytes : Bytes, offset : Int) -> Int64 {
+fn be_u64(bytes : Bytes, offset : Int32) -> Int64 {
   be_u32(bytes, offset) * 4_294_967_296L + be_u32(bytes, offset + 4)
 }
 
 ///|
 /// True when the four bytes at `offset` spell the given box type tag.
-fn box_type_is(bytes : Bytes, offset : Int, name : Bytes) -> Bool {
+fn box_type_is(bytes : Bytes, offset : Int32, name : Bytes) -> Bool {
   bytes[offset] == name[0] &&
   bytes[offset + 1] == name[1] &&
   bytes[offset + 2] == name[2] &&
@@ -33,7 +33,7 @@ fn box_type_is(bytes : Bytes, offset : Int, name : Bytes) -> Bool {
 /// header starts at `offset`. `payload_end` is also the offset of the next
 /// sibling box. Returns `None` when the header or declared size is malformed
 /// or runs past `end`.
-fn box_payload(bytes : Bytes, offset : Int, end : Int) -> (Int, Int)? {
+fn box_payload(bytes : Bytes, offset : Int32, end : Int32) -> (Int32, Int32)? {
   if offset + 8 > end {
     return None
   }
@@ -46,12 +46,12 @@ fn box_payload(bytes : Bytes, offset : Int, end : Int) -> (Int, Int)? {
     header_len = 16
     be_u64(bytes, offset + 8)
   } else if size32 == 0L {
-    Int::to_int64(end - offset)
+    Int32::to_int64(end - offset)
   } else {
     size32
   }
-  let remaining = Int::to_int64(end - offset)
-  if size < Int::to_int64(header_len) || size > remaining {
+  let remaining = Int32::to_int64(end - offset)
+  if size < Int32::to_int64(header_len) || size > remaining {
     return None
   }
   let size_int = Int64::to_int(size)
@@ -62,7 +62,12 @@ fn box_payload(bytes : Bytes, offset : Int, end : Int) -> (Int, Int)? {
 /// Scan sibling boxes from `start` up to `end` and return the payload range of
 /// the first box whose type tag matches `name`. Non-matching boxes are skipped
 /// using their declared size, so malformed framing fails the whole walk.
-fn find_box(bytes : Bytes, start : Int, end : Int, name : Bytes) -> (Int, Int)? {
+fn find_box(
+  bytes : Bytes,
+  start : Int32,
+  end : Int32,
+  name : Bytes,
+) -> (Int32, Int32)? {
   let mut offset = start
   while offset < end {
     match box_payload(bytes, offset, end) {
@@ -83,10 +88,10 @@ fn find_box(bytes : Bytes, start : Int, end : Int, name : Bytes) -> (Int, Int)? 
 /// 4-byte version/flags field, so children begin at `parent_start + 4`.
 fn find_child_box(
   bytes : Bytes,
-  parent_start : Int,
-  parent_end : Int,
+  parent_start : Int32,
+  parent_end : Int32,
   name : Bytes,
-) -> (Int, Int)? {
+) -> (Int32, Int32)? {
   if parent_start + 4 > parent_end {
     return None
   }

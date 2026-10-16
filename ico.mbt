@@ -4,7 +4,7 @@
 /// the first directory entry, where 0 means 256 pixels.
 
 ///|
-pub fn ico_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn ico_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   if bytes.length() < 22 {
     return None
   }
@@ -31,7 +31,7 @@ pub fn ico_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
-async fn read_ico_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_ico_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 22L {
     return None
   }

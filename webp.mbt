@@ -2,7 +2,7 @@
 /// Read the canvas dimensions from the first simple or extended WebP header.
 /// The caller supplies the full file size because this function receives only a
 /// short prefix, not the compressed image data.
-pub fn webp_dimensions(bytes : Bytes, file_size : Int64) -> (Int, Int)? {
+pub fn webp_dimensions(bytes : Bytes, file_size : Int64) -> (Int32, Int32)? {
   if bytes.length() < 20 || file_size < 20L {
     return None
   }
@@ -38,7 +38,7 @@ pub fn webp_dimensions(bytes : Bytes, file_size : Int64) -> (Int, Int)? {
     }
     let width = read_webp_u24(bytes, 24) + 1
     let height = read_webp_u24(bytes, 27) + 1
-    if Int::to_int64(width) * Int::to_int64(height) > 4_294_967_295L {
+    if Int32::to_int64(width) * Int32::to_int64(height) > 4_294_967_295L {
       return None
     }
     return Some((width, height))
@@ -79,7 +79,7 @@ pub fn webp_dimensions(bytes : Bytes, file_size : Int64) -> (Int, Int)? {
 }
 
 ///|
-async fn read_webp_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_webp_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 20L {
     return None
   }
@@ -173,22 +173,22 @@ async fn webp_chunks_are_valid(file : @fs.File, size : Int64) -> Bool {
 }
 
 ///|
-fn read_webp_u24(bytes : Bytes, offset : Int) -> Int {
+fn read_webp_u24(bytes : Bytes, offset : Int32) -> Int32 {
   bytes[offset].to_int() +
   bytes[offset + 1].to_int() * 256 +
   bytes[offset + 2].to_int() * 65_536
 }
 
 ///|
-fn read_webp_u32(bytes : Bytes, offset : Int) -> Int64 {
-  Int::to_int64(bytes[offset].to_int()) +
-  Int::to_int64(bytes[offset + 1].to_int()) * 256L +
-  Int::to_int64(bytes[offset + 2].to_int()) * 65_536L +
-  Int::to_int64(bytes[offset + 3].to_int()) * 16_777_216L
+fn read_webp_u32(bytes : Bytes, offset : Int32) -> Int64 {
+  Int32::to_int64(bytes[offset].to_int()) +
+  Int32::to_int64(bytes[offset + 1].to_int()) * 256L +
+  Int32::to_int64(bytes[offset + 2].to_int()) * 65_536L +
+  Int32::to_int64(bytes[offset + 3].to_int()) * 16_777_216L
 }
 
 ///|
-fn webp_chunk_type_is(bytes : Bytes, offset : Int, name : Bytes) -> Bool {
+fn webp_chunk_type_is(bytes : Bytes, offset : Int32, name : Bytes) -> Bool {
   bytes[offset] == name[0] &&
   bytes[offset + 1] == name[1] &&
   bytes[offset + 2] == name[2] &&

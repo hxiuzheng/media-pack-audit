@@ -34,6 +34,8 @@ pub fn matches_aspect(Int, Int, Int, Int) -> Bool
 
 pub fn parse_aspect(String) -> (Int, Int)?
 
+pub fn parse_manifest_json(String) -> Manifest raise ManifestParseError
+
 pub fn png_dimensions(Bytes) -> (Int, Int)?
 
 pub fn psd_dimensions(Bytes) -> (Int, Int)?
@@ -53,6 +55,11 @@ pub fn tiff_dimensions(Bytes) -> (Int, Int)?
 pub fn webp_dimensions(Bytes, Int64) -> (Int, Int)?
 
 // Errors
+pub suberror ManifestParseError {
+  InvalidJson(String)
+  DuplicateJsonKey(String)
+  InvalidField(String)
+}
 
 // Types and methods
 pub(all) struct AssetSpec {

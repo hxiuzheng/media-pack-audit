@@ -6,7 +6,7 @@
 /// integer pixel sizes; fractional or unit-relative sizes are rejected.
 
 ///|
-pub fn svg_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn svg_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   let tag_start = match find_svg_open_tag(bytes) {
     Some(offset) => offset
     None => return None
@@ -29,7 +29,7 @@ pub fn svg_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
-fn find_svg_open_tag(bytes : Bytes) -> Int? {
+fn find_svg_open_tag(bytes : Bytes) -> Int32? {
   let end = bytes.length()
   let mut index = 0
   while index + 4 <= end {
@@ -53,7 +53,7 @@ fn is_svg_tag_boundary(byte : Byte) -> Bool {
 ///|
 /// Find the closing `>` of the tag that starts at `tag_start`, skipping `>`
 /// characters that appear inside quoted attribute values.
-fn find_tag_end(bytes : Bytes, tag_start : Int) -> Int? {
+fn find_tag_end(bytes : Bytes, tag_start : Int32) -> Int32? {
   let end = bytes.length()
   let mut index = tag_start + 1
   let mut quote : Byte? = None
@@ -77,10 +77,10 @@ fn find_tag_end(bytes : Bytes, tag_start : Int) -> Int? {
 /// Locate an attribute by name and return the range of its quoted value.
 fn find_attribute(
   bytes : Bytes,
-  tag_start : Int,
-  tag_end : Int,
+  tag_start : Int32,
+  tag_end : Int32,
   name : Bytes,
-) -> (Int, Int)? {
+) -> (Int32, Int32)? {
   let name_length = name.length()
   let mut index = tag_start + 1
   while index + name_length <= tag_end {
@@ -116,10 +116,10 @@ fn find_attribute(
 ///|
 fn find_attribute_int(
   bytes : Bytes,
-  tag_start : Int,
-  tag_end : Int,
+  tag_start : Int32,
+  tag_end : Int32,
   name : Bytes,
-) -> Int? {
+) -> Int32? {
   match find_attribute(bytes, tag_start, tag_end, name) {
     Some((value_start, value_end)) =>
       parse_svg_int(bytes, value_start, value_end)
@@ -130,7 +130,7 @@ fn find_attribute_int(
 ///|
 /// An attribute name must be preceded by whitespace so that substrings of a
 /// longer name (for example `maxwidth`) do not match.
-fn attribute_name_is(bytes : Bytes, offset : Int, name : Bytes) -> Bool {
+fn attribute_name_is(bytes : Bytes, offset : Int32, name : Bytes) -> Bool {
   if offset == 0 || !is_space(bytes[offset - 1]) {
     return false
   }
@@ -147,7 +147,7 @@ fn attribute_name_is(bytes : Bytes, offset : Int, name : Bytes) -> Bool {
 /// (`px`, `%`, `em`, …) is ignored. Fractional values that are not exactly
 /// integral are rejected because they cannot be represented by the integer
 /// manifest.
-fn parse_svg_int(bytes : Bytes, start : Int, end : Int) -> Int? {
+fn parse_svg_int(bytes : Bytes, start : Int32, end : Int32) -> Int32? {
   let mut index = start
   while index < end && is_space(bytes[index]) {
     index += 1
@@ -190,9 +190,13 @@ fn parse_svg_int(bytes : Bytes, start : Int, end : Int) -> Int? {
 
 ///|
 /// Parse the third and fourth numbers of a `viewBox` value as width and height.
-fn parse_viewbox_wh(bytes : Bytes, start : Int, end : Int) -> (Int, Int)? {
+fn parse_viewbox_wh(
+  bytes : Bytes,
+  start : Int32,
+  end : Int32,
+) -> (Int32, Int32)? {
   let mut position = start
-  let values : Array[Int] = []
+  let values : Array[Int32] = []
   while values.length() < 4 {
     while position < end &&
           (is_space(bytes[position]) || bytes[position] == b',') {
@@ -262,7 +266,7 @@ fn is_digit(byte : Byte) -> Bool {
 }
 
 ///|
-async fn read_svg_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_svg_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size == 0L {
     return None
   }

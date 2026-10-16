@@ -4,7 +4,7 @@
 /// of the file.
 
 ///|
-pub fn psd_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn psd_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   if bytes.length() < 22 {
     return None
   }
@@ -32,7 +32,7 @@ pub fn psd_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
-async fn read_psd_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_psd_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 22L {
     return None
   }

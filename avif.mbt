@@ -5,7 +5,7 @@
 /// the HEIF / ISOBMFF container structure.
 
 ///|
-pub fn avif_dimensions(bytes : Bytes) -> (Int, Int)? {
+pub fn avif_dimensions(bytes : Bytes) -> (Int32, Int32)? {
   let end = bytes.length()
   // The first box must be a `ftyp` brand box, otherwise this is not an
   // ISO-BMFF-based image.
@@ -52,7 +52,7 @@ pub fn avif_dimensions(bytes : Bytes) -> (Int, Int)? {
 }
 
 ///|
-async fn read_avif_dimensions(path : String, size : Int64) -> (Int, Int)? {
+async fn read_avif_dimensions(path : String, size : Int64) -> (Int32, Int32)? {
   if size < 12L {
     return None
   }

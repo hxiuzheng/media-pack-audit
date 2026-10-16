@@ -8,7 +8,7 @@
 ///|
 pub(all) struct ScaffoldResult {
   manifest : String
-  generated : Int
+  generated : Int32
   skipped : Array[String]
 }
 
@@ -52,9 +52,9 @@ pub async fn scaffold_manifest(asset_dir : String) -> ScaffoldResult {
 ///|
 fn render_asset_entry(
   file : String,
-  width : Int,
-  height : Int,
-  max_bytes : Int,
+  width : Int32,
+  height : Int32,
+  max_bytes : Int32,
 ) -> String {
   "    {\n      \"file\": \"\{json_escape(file)}\",\n      \"width\": \{width},\n      \"height\": \{height},\n      \"max_bytes\": \{max_bytes}\n    }"
 }
