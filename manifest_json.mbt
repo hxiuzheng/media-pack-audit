@@ -114,7 +114,9 @@ fn first_manifest_field_error(json : Json) -> String? {
             Array(assets) =>
               for index in 0..<assets.length() {
                 match assets[index] {
-                  Object(fields) =>
+                  Object(fields) => {
+                    let mut width_present = false
+                    let mut height_present = false
                     for field, field_value in fields {
                       if field != "file" &&
                         field != "label" &&
@@ -190,15 +192,31 @@ fn first_manifest_field_error(json : Json) -> String? {
                       if field == "width" ||
                         field == "height" ||
                         field == "max_bytes" {
+                        if field == "width" {
+                          width_present = true
+                        }
+                        if field == "height" {
+                          height_present = true
+                        }
                         match field_value {
                           Number(number, ..) if number.floor() != number =>
                             return Some(
                               "assets[\{index}].\{field} 必须是整数",
                             )
+                          Number(number, ..) if number <= 0 =>
+                            return Some(
+                              "assets[\{index}].\{field} 必须为正整数",
+                            )
                           _ => ()
                         }
                       }
                     }
+                    if width_present != height_present {
+                      return Some(
+                        "assets[\{index}] 的 width 和 height 必须同时提供",
+                      )
+                    }
+                  }
                   _ => ()
                 }
               }

@@ -2,8 +2,8 @@
 pub(all) struct AssetSpec {
   file : String
   label : String?
-  width : Int
-  height : Int
+  width : Int?
+  height : Int?
   max_bytes : Int
   min_bytes : Int?
   expected_sha256 : String?
@@ -988,32 +988,22 @@ pub async fn scan_assets(
       })
       continue
     }
-    if spec.width <= 0 || spec.height <= 0 || spec.max_bytes <= 0 {
+    let dimensions_are_valid = match (spec.width, spec.height) {
+      (Some(width), Some(height)) => width > 0 && height > 0
+      (None, None) => true
+      _ => false
+    }
+    if spec.max_bytes <= 0 || !dimensions_are_valid {
       results.push({
         file: spec.file,
         label: spec.label,
         status: "FAIL",
         observed: "—",
         sha256: "—",
-        details: "宽、高和 max_bytes 必须为正数",
+        details: "max_bytes 必须为正数；width 和 height 必须同时省略或同时为正数",
       })
       continue
     }
-    let format = match image_format(spec.file) {
-      Some(format) => format
-      None => {
-        results.push({
-          file: spec.file,
-          label: spec.label,
-          status: "FAIL",
-          observed: "不支持的格式",
-          sha256: "—",
-          details: "当前版本只检查 PNG、JPEG、WebP、GIF、BMP、TIFF、SVG、AVIF、JP2、ICO 和 PSD 图片",
-        })
-        continue
-      }
-    }
-
     let path = join_asset_path(asset_dir, spec.file)
     if !contains_entry(entries, spec.file) {
       results.push({
@@ -1040,7 +1030,13 @@ pub async fn scan_assets(
     }
 
     let size = @fs.file_size(path)
+    let extension_format = image_format(spec.file)
     let content_format = detect_content_format_from_file(path, size)
+    let parsed_image_format = match (extension_format, content_format) {
+      (Some(format), _) => Some(format)
+      (None, Some(format)) => Some(format)
+      (None, None) => None
+    }
     let issues : Array[String] = []
     let max_bytes = Int::to_int64(spec.max_bytes)
     if size > max_bytes {
@@ -1063,6 +1059,13 @@ pub async fn scan_assets(
       (Some(_), None) =>
         issues.push(
           "无法识别文件内容格式，无法核对 format 断言",
+        )
+      _ => ()
+    }
+    match (extension_format, content_format) {
+      (Some(expected), Some(actual)) if expected != actual =>
+        issues.push(
+          "扩展名与内容不符（扩展名 \{format_name(expected)}，实际 \{format_name(actual)}）",
         )
       _ => ()
     }
@@ -1099,24 +1102,34 @@ pub async fn scan_assets(
         }
       None => ()
     }
-    let dimensions = read_image_dimensions(format, path, size)
-    let observed = match dimensions {
-      Some((width, height)) => "\{width} × \{height}，\{size} bytes"
-      None => {
-        let message = match content_format {
-          Some(actual) if actual != format =>
-            "扩展名与内容不符（扩展名 \{format_name(format)}，实际 \{format_name(actual)}）"
+    let dimensions = match parsed_image_format {
+      Some(format) => read_image_dimensions(format, path, size)
+      None => None
+    }
+    match (parsed_image_format, dimensions) {
+      (Some(format), None) => {
+        let message = match (extension_format, content_format) {
+          (Some(expected), Some(actual)) if expected != actual => ""
           _ => format_error_message(format)
         }
-        issues.push(message)
-        "\{size} bytes"
+        if message != "" {
+          issues.push(message)
+        }
       }
+      (None, None) if spec.width is Some(_) || spec.aspect is Some(_) =>
+        issues.push("尺寸和宽高比规则只适用于受支持的图像文件")
+      _ => ()
     }
-    match dimensions {
-      Some((width, height)) if width != spec.width || height != spec.height =>
-        issues.push(
-          "尺寸不匹配（清单要求 \{spec.width} × \{spec.height}，实际 \{width} × \{height}）",
-        )
+    let observed = match dimensions {
+      Some((width, height)) => "\{width} × \{height}，\{size} bytes"
+      None => "\{size} bytes"
+    }
+    match (spec.width, spec.height, dimensions) {
+      (Some(expected_width), Some(expected_height), Some((width, height)))
+        if width != expected_width || height != expected_height =>
+          issues.push(
+            "尺寸不匹配（清单要求 \{expected_width} × \{expected_height}，实际 \{width} × \{height}）",
+          )
       _ => ()
     }
     match (dimensions, spec.aspect) {
@@ -1162,37 +1175,43 @@ pub async fn scan_assets(
   }
 
   for name in entries {
-    if image_format(name) is Some(_) {
-      let mut expected = false
-      for spec in manifest.assets {
-        if spec.file == name {
-          expected = true
-        }
+    let mut expected = false
+    for spec in manifest.assets {
+      if spec.file == name {
+        expected = true
       }
-      if !expected {
-        let path = join_asset_path(asset_dir, name)
-        if @fs.kind(path, follow_symlink=false) == @fs.FileKind::Regular {
-          let size = @fs.file_size(path)
-          let digest = sha256_file(path, size) catch { _ => None }
-          let sha256 = match digest {
-            Some(value) => value
-            None => "—"
-          }
-          let details = match
-            register_content_digest(seen_digests, name, sha256) {
-            Some(previous_file) =>
-              "图片文件未列在素材清单中；SHA-256 与 \{previous_file} 相同，可能是重复导出，请人工确认"
-            None => "图片文件未列在素材清单中"
-          }
-          results.push({
-            file: name,
-            label: None,
-            status: "EXTRA",
-            observed: "\{size} bytes",
-            sha256,
-            details,
-          })
+    }
+    if !expected {
+      let path = join_asset_path(asset_dir, name)
+      if @fs.kind(path, follow_symlink=false) == @fs.FileKind::Regular {
+        let size = @fs.file_size(path)
+        let is_image = image_format(name) is Some(_)
+        let digest = if is_image {
+          sha256_file(path, size) catch { _ => None }
+        } else {
+          None
         }
+        let sha256 = match digest {
+          Some(value) => value
+          None => "—"
+        }
+        let details = if is_image {
+          match register_content_digest(seen_digests, name, sha256) {
+            Some(previous_file) =>
+              "未登记图片文件；SHA-256 与 \{previous_file} 相同，可能是重复导出，请人工确认"
+            None => "未登记图片文件"
+          }
+        } else {
+          "未登记文件"
+        }
+        results.push({
+          file: name,
+          label: None,
+          status: "EXTRA",
+          observed: "\{size} bytes",
+          sha256,
+          details,
+        })
       }
     }
   }

@@ -1,8 +1,8 @@
 ///|
 /// A separate package that consumes the public audit library API.
 async fn main {
-  let manifest_path = "examples/clean/media-pack.json"
-  let asset_dir = "examples/clean/assets"
+  let manifest_path = "examples/library_consumer/media-pack.json"
+  let asset_dir = "examples/library_consumer/assets"
   let manifest_bytes = @fs.read_file(manifest_path)
   let manifest = @audit.parse_manifest_json(manifest_bytes.text())
   let manifest_sha256 = @audit.sha256_bytes(manifest_bytes.binary())
@@ -22,7 +22,7 @@ async fn main {
   }
 
   println(
-    "库调用完成：\{report.checked} 项，\{report.passed} 项通过，\{report.failed} 项需处理",
+    "通用文件包库调用完成：\{report.checked} 项，\{report.passed} 项通过，\{report.failed} 项需处理",
   )
   println("清单 SHA-256：\{report.manifest_sha256}")
   println("JSON 报告：\{output_dir}/report.json")

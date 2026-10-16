@@ -1,8 +1,8 @@
 # 片盒点检 · MediaPack Audit
 
-**面向数字媒体素材交付的可复用预检库。** 核心是一个只读图像元数据的 MoonBit 库：读取一份 JSON 清单，检查交付目录中的 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD 是否缺失、尺寸是否正确、文件是否超限，以及有没有未登记的图片，并生成适合交付复核的 HTML 和 JSON 报告。仓库同时提供一个命令行入口（CLI）作为库的薄消费端。
+**面向资源包交付的可复用 MoonBit 校验库。** 调用者用 JSON 清单声明文件和约束，库检查清单项是否存在、路径是否安全、文件大小/摘要是否符合要求，并报告包内未登记文件。对 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD，还可按需校验格式、尺寸和宽高比。公开 API 可由 MoonBit 应用或 CI 直接调用；命令行入口（CLI）只是一个薄消费端。
 
-> MoonBit Lang Hackathon 2026 项目方向：用 MoonBit 构建一个可复用的数字媒体预检库。核心聚焦在“素材包验收”，不做图像编辑器、素材生成器或通用文件管理器。
+> 项目边界：它是清单驱动的资源包验收组件，不是图像编辑器或像素解码器。通用文件检查不依赖图像格式；图像尺寸等规则是可选的领域扩展。
 
 ## 为什么做它
 
@@ -10,26 +10,27 @@
 
 ## 能做什么
 
-- 按清单递归检查素材目录中的相对路径是否存在、是否为普通文件；额外图片也会报告其相对路径。
+- 按清单递归检查素材目录中的相对路径是否存在、是否为普通文件；清单未登记的文件也会报告其相对路径。
+- 对任意普通文件均可执行清单存在性、路径安全、容量上限/下限和可选 SHA-256 校验；非图像文件不要求提供图像尺寸字段。
 - 读取 PNG IHDR、JPEG SOF、WebP VP8/VP8L/VP8X 头、GIF 逻辑屏幕、BMP DIB 头、TIFF 尺寸标签、SVG 宽高/viewBox、AVIF 的 ispe 属性盒、JPEG 2000 的 ihdr 盒、ICO/CUR 首项与 PSD 头核对像素宽高；PNG 会校验 IHDR 字段、逐块 CRC 和基本容器结构，WebP 会检查 RIFF 长度、块边界和奇数字节填充；不解码图像。
 - JPEG 尺寸按 EXIF Orientation 换算为方向校正后的显示宽高，支持小端和大端 TIFF 标记；无效或不完整的 EXIF 方向信息会忽略并保留 SOF 尺寸。
-- 检查文件大小上限，并报告目录中的额外 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD。
+- 对受支持图像可校验文件大小，并报告格式、尺寸或宽高比；图像校验是通用文件包校验之上的可选能力。
 - 每项可选填写 expected_sha256，核对交付文件是否与预期内容一致；不匹配会让素材项失败。
 - 素材项可选填 `aspect`，按 `W:H` 核对宽高比（精确整数比例），用于封面、社媒图等有固定比例的交付要求。
 - 可选设置 max_total_bytes，限制整个素材目录树的总容量；递归统计所有普通文件，包括非图片文件。
 - 当尺寸或文件大小不符合清单时，报告会同时写出要求值和实际值，方便直接定位该改哪项素材。
 - 素材项可选填 `label`，用“课程主视觉”“微信公众号封面”等用途标注交付内容；HTML 与 JSON 报告保留该标签，HTML 会转义标签文本。
-- JSON、HTML 和 CLI 摘要会记录所用清单原始字节的 SHA-256，方便把归档报告对应回当时的规格文件；清单空格或换行变化也会改变指纹。清单与图片指纹都只是内容标识，不是来源认证或数字签名。
-- 在 JSON 与 HTML 报告中为已检查的 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD 生成 SHA-256 内容指纹，方便留档和核对重新导出的文件；它不证明素材来源或签名。相同指纹会提示潜在重复导出，仅供人工确认，不会判为失败。超过 max_bytes 上限的文件会跳过哈希与 expected_sha256 比较；PNG CRC/结构检查和 WebP RIFF 块边界检查仍会执行。
+- JSON、HTML 和 CLI 摘要会记录所用清单原始字节的 SHA-256，方便把归档报告对应回当时的规格文件；清单空格或换行变化也会改变指纹。清单与文件指纹都只是内容标识，不是来源认证或数字签名。
+- 对清单内未超出 `max_bytes` 的文件生成 SHA-256 内容指纹，方便核对文件内容；它不证明来源或签名。相同指纹会提示潜在重复文件，仅供人工确认，不会判为失败。超限文件会跳过哈希与 expected_sha256 比较；PNG CRC/结构检查和 WebP RIFF 块边界检查仍会执行。
 - 检查清单中的重复文件名、不安全路径和无效规格，并提示同一素材包中 SHA-256 相同的潜在重复文件；提示不改变通过/失败状态。
 - 严格检查 JSON 清单字段：只接受顶层 `assets`、可选 `max_total_bytes` 及素材项中的 `file`、可选 `label`、`width`、`height`、`max_bytes`、可选 `min_bytes`、可选 `expected_sha256`、可选 `aspect`、可选 `format`；拼错或暂不支持的字段会在检查前指出路径并拒绝运行，并对拼写相近的字段给出“你是不是想写 X？”提示，重复字段（包括 JSON 转义后等价的字段名）也会被拒绝，避免规格被静默忽略。
-- `width`、`height`、`max_bytes`、设置后的 `min_bytes` 和设置后的 `max_total_bytes` 必须为正整数；expected_sha256 必须是 64 位十六进制字符串；format 必须是受支持的格式名；小数不会被截断成另一个看似有效的规格。
+- `max_bytes`、设置后的 `min_bytes` 和设置后的 `max_total_bytes` 必须为正整数；`width` 和 `height` 若填写必须成对且为正整数；expected_sha256 必须是 64 位十六进制字符串；format 必须是受支持的图像格式名；小数不会被截断成另一个看似有效的规格。
 - 按文件头识别实际图片格式，与扩展名不一致时给出“扩展名与内容不符”的明确提示；素材项可选填 `format` 断言交付文件的内容格式（接受 png/jpeg/webp/gif/bmp/tiff/svg/avif/jp2/ico/psd 及常见别名）。
 - 素材项可选填 `min_bytes`，用于限制交付文件不得小于某个体积（例如拒绝被过度压缩或损坏为空的文件）。
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
-当前版本递归检查素材目录中的 PNG、JPEG、WebP、GIF、BMP、TIFF、SVG、AVIF、JP2、ICO 和 PSD；扩展名接受 `.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.bmp`、`.tif`、`.tiff`、`.svg`、`.avif`、`.jp2`、`.ico`、`.cur`、`.psd`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF（存在有效 EXIF Orientation 时换算成显示方向）、WebP 的 VP8/VP8L 头或 VP8X 画布字段、GIF 逻辑屏幕描述符、BMP 的 DIB 尺寸头、TIFF 的 ImageWidth/ImageLength 标签、SVG 的 width/height 属性或 viewBox（仅整数）、AVIF 的 ispe 属性盒、JPEG 2000 的 ihdr 盒、ICO/CUR 首项目录项以及 PSD 头。WebP 检查 RIFF 声明长度、块边界、必需的图像数据块和零填充，但不解析完整扩展元数据语义或动画帧数据。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。WebP 字段依据 [Google WebP 容器规范](https://developers.google.com/speed/webp/docs/riff_container)、[VP8 数据格式规范（RFC 6386）](https://datatracker.ietf.org/doc/html/rfc6386) 与 [WebP Lossless Bitstream 规范](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification)。JPEG 元数据扫描最多读取文件开头 4 MiB；没有有效 EXIF Orientation 时，报告沿用 SOF 中存储的宽高。GIF 只检查画布宽高，不读取帧数或动画时序。对于未超过 `max_bytes` 的受支持图片，工具会以 64 KiB 缓冲区读取完整文件并记录 SHA-256；这可能需要比读取尺寸头更长的时间。超限文件显示 `—`，表示未计算哈希，但 PNG CRC 与结构检查仍会流式读取整个 PNG，WebP RIFF 检查仍会逐块读取块头和奇数长度填充字节。SHA-256 依赖固定版本 `moonbitlang/x@0.5.5` 的 [crypto 包](https://github.com/moonbitlang/x/tree/main/crypto)；该模块属于实验性包，项目锁定版本并只用其哈希功能。指纹仅用于内容比对，不是来源认证或数字签名。工具不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
+清单可列出任意普通文件，通用检查覆盖路径、存在性、大小、摘要和未登记文件；图像元数据仅支持以下格式。扩展名接受 `.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.bmp`、`.tif`、`.tiff`、`.svg`、`.avif`、`.jp2`、`.ico`、`.cur`、`.psd`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF（存在有效 EXIF Orientation 时换算成显示方向）、WebP 的 VP8/VP8L 头或 VP8X 画布字段、GIF 逻辑屏幕描述符、BMP 的 DIB 尺寸头、TIFF 的 ImageWidth/ImageLength 标签、SVG 的 width/height 属性或 viewBox（仅整数）、AVIF 的 ispe 属性盒、JPEG 2000 的 ihdr 盒、ICO/CUR 首项目录项以及 PSD 头。WebP 检查 RIFF 声明长度、块边界、必需的图像数据块和零填充，但不解析完整扩展元数据语义或动画帧数据。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。WebP 字段依据 [Google WebP 容器规范](https://developers.google.com/speed/webp/docs/riff_container)、[VP8 数据格式规范（RFC 6386）](https://datatracker.ietf.org/doc/html/rfc6386) 与 [WebP Lossless Bitstream 规范](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification)。JPEG 元数据扫描最多读取文件开头 4 MiB；没有有效 EXIF Orientation 时，报告沿用 SOF 中存储的宽高。GIF 只检查画布宽高，不读取帧数或动画时序。对于未超过 `max_bytes` 的受支持图片，工具会以 64 KiB 缓冲区读取完整文件并记录 SHA-256；这可能需要比读取尺寸头更长的时间。超限文件显示 `—`，表示未计算哈希，但 PNG CRC 与结构检查仍会流式读取整个 PNG，WebP RIFF 检查仍会逐块读取块头和奇数长度填充字节。SHA-256 依赖固定版本 `moonbitlang/x@0.5.5` 的 [crypto 包](https://github.com/moonbitlang/x/tree/main/crypto)；该模块属于实验性包，项目锁定版本并只用其哈希功能。指纹仅用于内容比对，不是来源认证或数字签名。工具不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
 
 ## 生态调研与复用取舍
 
@@ -109,7 +110,7 @@ Start-Process .\report\report.html
 moon add hxiuzheng/media-pack-audit
 ```
 
-仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，读取 JSON 清单、调用 `scan_assets`，将 HTML/JSON 报告实际写入 `_build/library-consumer/`。这验证了独立包对公开 API 的编译期与运行期调用路径；不是外部项目采用或用户反馈的证据。仓库根目录执行：
+仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，用清单校验一份非图像 `release-notes.txt`，调用 `scan_assets` 并将 HTML/JSON 报告写入 `_build/library-consumer/`。该样例展示通用文件规则不依赖图像解析；它验证独立包的公开 API 调用路径，不代表外部项目采用或用户反馈。仓库根目录执行：
 
 ```sh
 moon run --target native examples/library_consumer
@@ -165,7 +166,15 @@ fn inspect(bytes : Bytes) -> Unit {
 }
 ```
 
-每项都需要 `file`、`width`、`height` 和 `max_bytes`；可选 `label` 用于写明用途，并显示在 HTML/JSON 报告中。当前版本拒绝未识别字段（例如把 `max_bytes` 错拼成 `max_byts`），避免忽略用户写下的要求。宽、高、单项大小上限及总容量上限必须是正整数，小数会直接报错而不会被截断。`file` 可写为目录内相对路径，例如 `social/cover.jpeg`；使用 `/` 作为分隔符，不得使用绝对路径、反斜线或 `..` 路径段。
+每项都需要 `file` 和 `max_bytes`；可选 `label` 用于写明用途，并显示在 HTML/JSON 报告中。任意普通文件都可使用 `max_bytes`、`min_bytes` 和 `expected_sha256` 校验；`width` 与 `height` 必须成对填写，仅适用于受支持图像，`aspect` 与 `format` 也是图像约束。当前版本拒绝未识别字段（例如把 `max_bytes` 错拼成 `max_byts`），避免忽略用户写下的要求。已填写的尺寸、单项大小上限及总容量上限必须是正整数，小数会直接报错而不会被截断。`file` 可写为目录内相对路径，例如 `social/cover.jpeg`；使用 `/` 作为分隔符，不得使用绝对路径、反斜线或 `..` 路径段。
+
+非图像文件示例：
+
+```json
+{ "assets": [{ "file": "release-notes.txt", "label": "发布说明", "max_bytes": 2048, "min_bytes": 20 }] }
+```
+
+当清单省略 `width`/`height` 时，检查器只执行通用文件约束；若清单提供图像尺寸或比例，素材必须能识别为受支持的图像格式。
 
 顶层可选填写正整数 `max_total_bytes` 限制整个素材目录树的容量。工具会递归累加其中所有普通文件（图片和非图片均计入），忽略符号链接，并在 JSON/HTML 报告中添加 `<package>` 汇总项；未设置时不执行总容量检查。
 

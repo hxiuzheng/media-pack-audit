@@ -58,8 +58,8 @@ pub fn webp_dimensions(Bytes, Int64) -> (Int, Int)?
 pub(all) struct AssetSpec {
   file : String
   label : String?
-  width : Int
-  height : Int
+  width : Int?
+  height : Int?
   max_bytes : Int
   min_bytes : Int?
   expected_sha256 : String?

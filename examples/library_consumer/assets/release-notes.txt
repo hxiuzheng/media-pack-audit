@@ -1,0 +1,2 @@
+This package demonstrates validating non-image assets with the public MoonBit API.
+The manifest checks that this file is present and stays within its configured size budget.

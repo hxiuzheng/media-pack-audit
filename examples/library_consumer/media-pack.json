@@ -1,0 +1,10 @@
+{
+  "assets": [
+    {
+      "file": "release-notes.txt",
+      "label": "发布说明",
+      "max_bytes": 2048,
+      "min_bytes": 20
+    }
+  ]
+}
