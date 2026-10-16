@@ -262,7 +262,7 @@ async fn main {
   let expected_sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
   @fs.write_file(
     "\{package_budget_dir}/sha-mismatch-manifest.json",
-    "{\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":4096,\"expected_sha256\":\"\{expected_sha256}\"}]}",
+    "{\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":4096,\"expected_sha256\":\"\{expected_sha256}\"},{\"file\":\"subdir/notes.txt\",\"max_bytes\":4096}]}",
   )
   let sha_mismatch = @shell.Cmd("moon", [
     "run",
@@ -290,7 +290,7 @@ async fn main {
 
   @fs.write_file(
     "\{package_budget_dir}/sha-skipped-manifest.json",
-    "{\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":1,\"expected_sha256\":\"\{expected_sha256}\"}]}",
+    "{\"assets\":[{\"file\":\"subdir/poster.png\",\"width\":4,\"height\":3,\"max_bytes\":1,\"expected_sha256\":\"\{expected_sha256}\"},{\"file\":\"subdir/notes.txt\",\"max_bytes\":4096}]}",
   )
   let sha_skipped = @shell.Cmd("moon", [
     "run",
