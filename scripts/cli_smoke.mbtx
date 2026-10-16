@@ -144,6 +144,37 @@ async fn main {
     )
   }
 
+  let generic_init_output = "_build/cli-smoke/init-generic-manifest.json"
+  if @fs.exists(generic_init_output) {
+    @fs.remove(generic_init_output)
+  }
+  let generic_init = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", "init", "examples/library_consumer/assets",
+    "--output", generic_init_output,
+  ]).output()
+  if generic_init.exit_code() != 0 {
+    raise Failure::Failure(
+      "init should include non-image files, got {generic_init.exit_code()}\n{generic_init.stderr()}",
+    )
+  }
+  let generic_manifest = @fs.read_file(generic_init_output).text()
+  if !generic_manifest.contains("\"file\": \"release-notes.txt\"") ||
+    generic_manifest.contains("\"width\"") ||
+    !generic_manifest.contains("\"max_bytes\"") {
+    raise Failure::Failure(
+      "generic files should get a path and size budget without image dimensions",
+    )
+  }
+  let generic_init_check = @shell.Cmd("moon", [
+    "run", "--target", "native", "cmd/main", "--", generic_init_output, "examples/library_consumer/assets",
+    "--output", "_build/cli-smoke/init-generic-check",
+  ]).output()
+  if generic_init_check.exit_code() != 0 {
+    raise Failure::Failure(
+      "the generic scaffold should pass check, got {generic_init_check.exit_code()}",
+    )
+  }
+
   let oriented_dir = "_build/cli-smoke/jpeg-exif-orientation"
   if !@fs.exists("\{oriented_dir}/assets") {
     @fs.mkdir("\{oriented_dir}/assets", recursive=true)

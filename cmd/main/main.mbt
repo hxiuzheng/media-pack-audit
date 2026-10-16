@@ -151,7 +151,7 @@ async fn run_init(matches : @argparse.Matches) -> Unit {
   @fs.write_file(output_path, result.manifest)
   println("已生成清单：\{output_path}（\{result.generated} 项素材）")
   for skipped in result.skipped {
-    println("跳过（无法读取尺寸）：\{skipped}")
+    println("跳过（文件大小超过清单可表示范围）：\{skipped}")
   }
   println(
     "请按交付要求核对并补充 label、max_bytes 等字段后再运行 check。",

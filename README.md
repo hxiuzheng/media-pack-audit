@@ -58,7 +58,7 @@ moon run --target native cmd/main -- examples/clean/media-pack.json examples/cle
 
 命令会在 `report/` 下生成 `report.html` 和 `report.json`。打开 `report/report.html` 查看视觉报告。CLI 会先确认清单是文件、素材输入是目录；输入路径或清单有问题时给出错误并以非零状态退出。点检完成后，通过时退出码为 `0`；发现素材不合格时仍会先保存两种报告，再返回非零状态，适合接入 CI。
 
-用 `init` 子命令从已有素材目录生成一份起步清单（自动读取每张图的宽高与大小，`max_bytes` 默认为实际大小的两倍、至少 1 KiB）：
+用 `init` 子命令从已有资源目录生成一份起步清单：所有普通文件都会生成路径和容量约束，受支持且能读取尺寸的图片还会附带宽高；`max_bytes` 通常默认为实际大小的两倍、至少 1 KiB，受清单整数范围限制。超过该范围的文件会列出并跳过。生成结果只是待人工核对的草稿，不会替代交付规范：
 
 ```sh
 moon run --target native cmd/main -- init examples/formats/assets --output media-pack.json
@@ -217,13 +217,11 @@ moon run --target native scripts/cli_smoke.mbtx
 
 后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。选题上与 `moonbit-posterkit`、MoonBitMark 等生成/转换类项目的差异，见上文「与同类项目的区别」一节。
 
-参赛项目简介、初审申报版和准备状态见 [`PROJECT_PROPOSAL.md`](PROJECT_PROPOSAL.md)、[`docs/片盒点检项目申报书_初审申报版.md`](docs/片盒点检项目申报书_初审申报版.md) 与 [`docs/initial-review-checklist.md`](docs/initial-review-checklist.md)。
-
 ## 人工主导、AI 辅助说明
 
 本项目采用人工主导、AI 辅助的开发方式。项目方向、问题定义、格式支持范围、只读与安全边界、验收标准、公开声明和最终提交由参赛者本人决定。Codex 只用于 MoonBit API 查询、重复性代码草拟、边界用例枚举、编译诊断和文档整理。
 
-AI 生成的建议不自动视为成果：每项改动都必须由参赛者检查源码、运行相关测试并理解其限制；未完成人工复核的改动不得作为最终参赛成果。仓库保留开发记录中的 AI 辅助披露，不改写历史来伪造纯人工作者。提交前的人工复核项目见 [`docs/human-review-checklist.md`](docs/human-review-checklist.md)。
+AI 生成的建议不自动视为成果：每项改动都必须由参赛者检查源码、运行相关测试并理解其限制；未完成人工复核的改动不得作为最终参赛成果。仓库保留开发记录中的 AI 辅助披露，不改写历史来伪造纯人工作者。
 
 ## License
 
