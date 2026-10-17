@@ -4,6 +4,20 @@
 
 > 项目边界：它是清单驱动的资源包验收组件，不是图像编辑器或像素解码器。通用文件检查不依赖图像格式；图像尺寸等规则是可选的领域扩展。
 
+## 十月维护范围与已有基础
+
+项目在九月已具备媒体清单点检、11 种图像元数据读取、路径规则、容量与摘要约束、HTML/JSON 报告、公开库接口及独立消费示例。十月维护以九月末提交 [`dd8b58b`](https://github.com/hxiuzheng/media-pack-audit/tree/dd8b58b) 为已有基础，不把这些能力计为十月新增成果。
+
+| 十月维护 | 对已有行为的改变 | 代码与复现依据 |
+|---|---|---|
+| 通用文件包校验 | 图片必填尺寸改为可选；普通文件可按大小和摘要验收，未登记的非图像文件也会报告 | [`f7a78a1`](https://github.com/hxiuzheng/media-pack-audit/commit/f7a78a1)；`examples/library_consumer` 的文本附件消费示例 |
+| 通用目录清单生成及转义修复 | `init` 纳入普通文件；生成含控制字符路径时使用合法 JSON 转义，保留图片尺寸的可选生成 | [`4daa2f7`](https://github.com/hxiuzheng/media-pack-audit/commit/4daa2f7) 至 [`25f16e4`](https://github.com/hxiuzheng/media-pack-audit/commit/25f16e4)；`manifest.mbt` 单测与 CLI 草稿回读、拒绝覆盖场景 |
+| 直接库调用的约束校验 | 修复直接构造规格时非法约束可能被忽略的问题；与 JSON 入口共用规则并拒绝矛盾大小区间 | [`163a9d3`](https://github.com/hxiuzheng/media-pack-audit/commit/163a9d3)；独立消费包的 3 项测试及 CLI 无效清单回归 |
+
+十月还适配了 MoonBit `0.1.20261012` 的类型与接口写法；这属于工具链维护。直接构造 `AssetSpec` 的旧调用者须把必填的 `width`/`height` 改为 `Some(宽)`/`Some(高)`，或同时使用 `None`；旧 JSON 清单中成对的整数尺寸仍可使用。当前公开字段及函数签名见 `pkg.generated.mbti`。
+
+十月维护赛道的提交截止为 **2026-10-31**；Mooncakes 发布安排在后续验收阶段，当前仓库不将元数据或可调用示例视为已经发布。提交版本仍需参赛者本人完成源码、限制及公开声明的复核；自动测试与 CI 记录不能替代该复核。
+
 ## 为什么做它
 
 数字媒体项目经常要把海报、封面、社媒图和 UI 资源交给老师、客户或开发同伴。文件名看起来齐全，并不代表规格正确；人工逐项核对也容易漏掉缺图、尺寸错误或多交文件。片盒点检把交付要求写成清单，让检查结果可以重复运行、留档和分享。
@@ -141,17 +155,15 @@ Start-Process .\report\report.html
 
 ## 作为库使用
 
-核心能力以 MoonBit 库的形式发布，CLI 只是它的薄消费端。在你的项目里添加依赖：
-
-```sh
-moon add hxiuzheng/media-pack-audit
-```
+核心能力由 MoonBit 库提供，CLI 是它的薄消费端。当前复用验证使用仓库内独立包；Mooncakes 发布及从注册表安装的验证安排在验收阶段，尚不作为已完成的复用证据。
 
 仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，用清单校验一份非图像 `release-notes.txt`，调用 `scan_assets` 并将 HTML/JSON 报告写入 `_build/library-consumer/`。该样例展示通用文件规则不依赖图像解析；它验证独立包的公开 API 调用路径，不代表外部项目采用或用户反馈。仓库根目录执行：
 
 ```sh
 moon run --target native examples/library_consumer
 ```
+
+示例可在同一检出目录重复执行，更新两份报告；CLI 回归脚本连续运行两次并核对报告，该脚本由 Ubuntu 与 Windows CI 执行，覆盖输出目录已存在的情况。
 
 在 `moon.pkg` 中引入并起别名：
 
@@ -163,7 +175,7 @@ import {
 
 公开 API 概览（不解码像素；目录扫描中的哈希与 PNG 结构检查可能读取完整文件）：
 
-- 尺寸解析：`png_dimensions` / `jpeg_dimensions` / `webp_dimensions` / `gif_dimensions` / `bmp_dimensions` / `tiff_dimensions` / `svg_dimensions` / `avif_dimensions` / `jp2_dimensions` / `ico_dimensions` / `psd_dimensions`，均接收 `Bytes` 返回 `(Int, Int)?`；
+- 尺寸解析：`png_dimensions` / `jpeg_dimensions` / `webp_dimensions` / `gif_dimensions` / `bmp_dimensions` / `tiff_dimensions` / `svg_dimensions` / `avif_dimensions` / `jp2_dimensions` / `ico_dimensions` / `psd_dimensions`，均接收 `Bytes` 返回 `(Int32, Int32)?`；
 - 内容格式识别：`detect_content_format(bytes)` 按文件头返回 `ImageFormat?`，`format_name(format)` 取规范小写名；
 - 清单读取与校验：`parse_manifest_json(text)` 拒绝重复键、未知字段和无效规格，返回 `Manifest` 或抛出 `ManifestParseError`；`scan_assets(asset_dir, manifest, manifest_sha256)` 返回 `AuditReport`；
 - 报告生成：`render_html(report)` 生成中文 HTML，`AuditReport` 实现 `ToJson` 生成机器可读 JSON；
@@ -215,7 +227,9 @@ fn inspect(bytes : Bytes) -> Unit {
 { "assets": [{ "file": "release-notes.txt", "label": "发布说明", "max_bytes": 2048, "min_bytes": 20 }] }
 ```
 
-当清单省略 `width`/`height` 时，检查器只执行通用文件约束；若清单提供图像尺寸或比例，素材必须能识别为受支持的图像格式。
+省略 `width`/`height` 表示不要求特定尺寸；检查器仍会对扩展名或文件头可识别的图片读取元数据、检查可支持的容器规则，并报告扩展名与内容不符。普通非图像文件无需图像字段；若清单提供图像尺寸或比例，素材必须能识别为受支持的图像格式。
+
+大小约束字段使用正 `Int32`，单个上限最多为 2,147,483,647 bytes；`init` 会跳过无法在该范围内生成预算的文件并列出路径。容量累计使用 `Int64`，但可填写的整包预算也受上述字段范围限制。未登记的非图像文件会使点检失败，当前不为其计算摘要；因此潜在重复提示不覆盖这些文件。
 
 顶层可选填写正整数 `max_total_bytes` 限制整个素材目录树的容量。工具会递归累加其中所有普通文件（图片和非图片均计入），忽略符号链接，并在 JSON/HTML 报告中添加 `<package>` 汇总项；未设置时不执行总容量检查。
 
@@ -255,7 +269,7 @@ moon run --target native examples/library_consumer
 moon run --target native scripts/cli_smoke.mbtx
 ```
 
-2026-10-17 本地复核使用 MoonBit `0.1.20261012 (748b63c)`：WSL Ubuntu / GCC 15.2 下无警告静态检查、59 项原生测试、独立库消费示例和 CLI 回归均通过；Windows 下 `moon info`、两项格式检查及无警告静态检查通过。本次未完成 Windows 原生测试，其构建环境仍需补齐。
+2026-10-17 本地复核使用 MoonBit `0.1.20261012 (748b63c)`：WSL Ubuntu / GCC 15.2 下无警告静态检查、59 项原生测试、独立库消费示例和 CLI 回归均通过。提交 `163a9d3` 的 [GitHub Actions #39006864786](https://github.com/hxiuzheng/media-pack-audit/actions/runs/39006864786) 已在 Ubuntu 与 Windows 两个 job 通过格式检查、无警告检查、59 项原生测试、独立消费示例（1 项通过）及完整 CLI 回归；Windows 原生运行的依据为远端 CI，不是本机运行。
 
 早期工具链可能无法解析当前依赖；工具链兼容或依赖解析失败不能算作测试通过。仓库的 Ubuntu 与 Windows CI 配置均包含原生检查、独立库消费示例和 CLI 回归；配置存在本身不代表某次远端运行已通过。
 

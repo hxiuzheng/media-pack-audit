@@ -2,6 +2,16 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-10-17：明确十月维护证据并修复消费示例重复运行
+
+- 按 Git 历史梳理维护边界：九月末 `dd8b58b` 已有 11 种图像元数据读取、清单规则、报告和库消费示例；十月 `f7a78a1` 才将尺寸改为可选、纳入普通文件校验与非图像未登记项，随后扩展通用清单生成、修复 JSON 控制字符转义，并在 `163a9d3` 统一直接库调用与 JSON 的约束校验。README 列出对应提交及复现入口，不把九月能力重计为十月新增。
+- 补充 `AssetSpec` 尺寸字段的源码迁移要求、正 `Int32` 预算范围、未登记非图像文件不计算摘要的限制；纠正“省略尺寸就只做通用检查”的描述，可识别图片仍会进入元数据与基础容器检查。
+- 本地完整复跑首先发现独立消费示例在已有报告目录上调用 `mkdir` 会以退出码 1 结束。现在复用已有普通目录，并拒绝非目录输出路径；CLI 回归脚本连续运行示例两次，核对成功计数、两份报告及 JSON 结果一致性，由既有 Ubuntu 与 Windows CI 执行，覆盖首次运行成功但再次运行失败的缺口。公开 API 签名未变化。
+- 将库复用说明限定为当前可复现的仓库内独立包，移除尚未提供安装验证的 Mooncakes 命令；说明 2026-10-31 是十月提交截止，Mooncakes 发布及注册表安装验证安排在后续验收阶段。当前版本的参赛者复核仍待本人完成，本次没有新增人工签字、真实素材试用、外部采用或反馈证据。
+- 复查规格校验修复提交 `163a9d3` 的 [GitHub Actions #39006864786](https://github.com/hxiuzheng/media-pack-audit/actions/runs/39006864786)：Ubuntu / Windows 均完成格式检查、无警告检查、59/59 原生测试、独立消费示例（1 项通过）及完整 CLI smoke。此前记录中的 Windows 本机原生测试未运行仍属实；远端 CI 已提供该平台验证，不能混记为本机结果。
+
+本轮由 Codex 辅助修复与验证。使用 MoonBit `0.1.20261012 (748b63c)`、WSL Ubuntu / GCC 15.2：`moon update`、`moon info`、`moon fmt`、`moon fmt --check`、`moon fmt --check scripts/cli_smoke.mbtx`、`moon check --target native --deny-warn`、`moon test --target native --deny-warn`（59/59）均通过；独立消费示例连续两次通过（均为 1 项通过、0 项失败，两份报告写入成功），完整 `moon run --target native scripts/cli_smoke.mbtx` 通过。生成接口无差异，`git diff --check` 通过。本轮本机未运行 Windows 原生测试；本次提交的远端结果以其 GitHub Actions 运行记录为准。
+
 ## 2026-10-17：统一直接库调用与 JSON 输入的规格校验
 
 - 修正直接构造 `AssetSpec` 调用 `scan_assets` 时可能忽略非法 `min_bytes`、`aspect` 或 `format` 的问题。类型化规格和 JSON 解码后的规格现在共用校验函数，覆盖正整数大小、成对正尺寸、64 位十六进制摘要、合法比例与受支持格式；无效规格在读取该项文件内容前生成带路径和标签的 `FAIL` 结果。

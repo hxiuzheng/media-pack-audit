@@ -10,7 +10,13 @@ async fn main {
   let json_report = @json.to_json(report).stringify()
   let html_report = @audit.render_html(report)
   let output_dir = "_build/library-consumer"
-  @fs.mkdir(output_dir, recursive=true)
+  if @fs.exists(output_dir) {
+    if @fs.kind(output_dir, follow_symlink=false) != @fs.FileKind::Directory {
+      raise Failure::Failure("库消费示例的输出路径不是普通目录")
+    }
+  } else {
+    @fs.mkdir(output_dir, recursive=true)
+  }
   @fs.write_file("\{output_dir}/report.json", json_report)
   @fs.write_file("\{output_dir}/report.html", html_report)
   if report.checked == 0 ||

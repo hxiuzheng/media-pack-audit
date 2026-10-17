@@ -8,6 +8,30 @@ import {
 
 ///|
 async fn main {
+  let mut previous_consumer_report = ""
+  for attempt in 0..<2 {
+    let consumer = @shell.Cmd("moon", [
+      "run", "--target", "native", "examples/library_consumer",
+    ]).output()
+    if consumer.exit_code() != 0 {
+      raise Failure::Failure(
+        "library consumer run \{attempt + 1} should return 0\n\{consumer.stderr()}",
+      )
+    }
+    let consumer_json = @fs.read_file("_build/library-consumer/report.json").text()
+    let consumer_html = @fs.read_file("_build/library-consumer/report.html").text()
+    if !consumer_json.contains("\"checked\":1") ||
+      !consumer_json.contains("\"passed\":1") ||
+      !consumer_json.contains("\"failed\":0") ||
+      !consumer_json.contains("release-notes.txt") ||
+      !consumer_html.contains("release-notes.txt") ||
+      (attempt > 0 && consumer_json != previous_consumer_report) {
+      raise Failure::Failure(
+        "repeated library consumer should preserve the passing JSON and HTML reports",
+      )
+    }
+    previous_consumer_report = consumer_json
+  }
   let clean = @shell.Cmd("moon", [
     "run", "--target", "native", "cmd/main", "--", "examples/clean/media-pack.json",
     "examples/clean/assets", "--output", "_build/cli-smoke/clean",
