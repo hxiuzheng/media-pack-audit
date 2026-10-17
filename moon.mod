@@ -21,7 +21,8 @@ license = "Apache-2.0"
 
 keywords = [
   "moonbit",
-  "digital-media",
+  "manifest",
+  "file-validation",
   "asset-validation",
   "image-metadata",
   "library",
@@ -29,7 +30,7 @@ keywords = [
 
 preferred_target = "native"
 
-description = "A reusable MoonBit library that reads image metadata and validates visual asset handoff folders against a media manifest."
+description = "A reusable MoonBit library for manifest-driven file package validation: paths, presence, size budgets, SHA-256, and optional image metadata checks, with JSON/HTML reports."
 
 import {
   "moonbitlang/async@0.22.1",

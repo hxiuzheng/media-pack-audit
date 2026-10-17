@@ -1,12 +1,41 @@
 # 片盒点检 · MediaPack Audit
 
-**面向资源包交付的可复用 MoonBit 校验库。** 调用者用 JSON 清单声明文件和约束，库检查清单项是否存在、路径是否安全、文件大小/摘要是否符合要求，并报告包内未登记文件。对 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD，还可按需校验格式、尺寸和宽高比。公开 API 可由 MoonBit 应用或 CI 直接调用；命令行入口（CLI）只是一个薄消费端。
+**清单驱动的通用文件包校验库，提供可选的图像元数据校验。** 调用者用 JSON 清单声明文件和约束，库检查清单项是否存在、路径是否安全、文件大小/摘要是否符合要求，并报告包内未登记文件。对 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD，还可按需校验格式、尺寸和宽高比。公开 API 可由 MoonBit 应用调用，命令行入口（CLI）是供人工操作或 CI 调用的薄消费端；输入清单和目录，输出结构化结果及 HTML/JSON 报告。
 
 > 项目边界：它是清单驱动的资源包验收组件，不是图像编辑器或像素解码器。通用文件检查不依赖图像格式；图像尺寸等规则是可选的领域扩展。
 
 ## 为什么做它
 
 数字媒体项目经常要把海报、封面、社媒图和 UI 资源交给老师、客户或开发同伴。文件名看起来齐全，并不代表规格正确；人工逐项核对也容易漏掉缺图、尺寸错误或多交文件。片盒点检把交付要求写成清单，让检查结果可以重复运行、留档和分享。
+
+## 三个可验证的预期使用场景
+
+以下是设计用途与仓库内的复现依据，不是外部采用、用户反馈或生态合作记录。合成图片和本仓库消费端只能验证功能路径；真实试用应另按[试用记录模板](docs/real-use-trial-template.md)记录规格来源、运行结果与人工核对结论。
+
+| 预期场景与调用者 | 输入与规则 | 调用路径和可核对结果 |
+|---|---|---|
+| MoonBit 应用验收发布附件或文档包 | `examples/library_consumer` 的 `release-notes.txt`；仅约束相对路径及 20–2048 bytes 的大小范围，无图像字段 | 独立包调用公开的清单解析、扫描和报告 API；应得到 `checked=1`、`passed=1`、`failed=0`，并生成清单 SHA-256 和 HTML/JSON 报告 |
+| 交付者或 CI 检查媒体资源规格 | `examples/clean` 清单与素材目录；检查图片尺寸、文件上限、预期 SHA-256 和整包 100000 bytes 预算 | CLI 应返回 `0`，报告 `passed=7`、`failed=0`（6 个文件及 1 个 `<package>` 汇总项）；受控错误包 `examples/demo` 应返回 `1`，保留报告并指出规格不符、缺件和未登记项 |
+| 维护者为已有目录建立清单草稿 | 现有普通文件目录；自动填入相对路径和大小上限，可读取尺寸的受支持图片另填宽高 | `init` 为非图像目录生成不含宽高的清单；生成清单可回读验收。相同输出路径再次执行应拒绝覆盖；图片目录的尺寸生成另由 `examples/formats` 及 CLI 回归验证 |
+
+在仓库根目录依次复现（需要下文说明的 native 工具链环境；第三个场景的草稿路径须尚不存在）：
+
+```sh
+# 1. 独立包消费公开 API；报告位于 _build/library-consumer/
+moon run --target native examples/library_consumer
+
+# 2. 通过包与受控错误包；两次运行均应生成 report.html 和 report.json
+moon run --target native cmd/main -- examples/clean/media-pack.json examples/clean/assets --output _build/scenarios/clean
+moon run --target native cmd/main -- examples/demo/media-pack.json examples/demo/assets --output _build/scenarios/issues
+
+# 3. 从非图像目录起草清单，再用草稿检查同一目录；预期均返回 0
+moon run --target native cmd/main -- init examples/library_consumer/assets --output _build/scenarios/draft.json
+moon run --target native cmd/main -- _build/scenarios/draft.json examples/library_consumer/assets --output _build/scenarios/draft-check
+```
+
+第二个场景的错误包返回 `1` 是预期的拒收结果，自动化脚本须显式检查该退出码。完整的 `scripts/cli_smoke.mbtx` 回归会断言通过/失败退出码、报告内容、普通文件与图片的清单生成、草稿回读和拒绝覆盖。草稿依据文件现状生成，只能作为起点，仍需由维护者按独立的交付要求修订；不能用“草稿检查自身通过”证明符合真实规格。
+
+维护范围围绕上述复用路径展开：严格清单与路径规则、文件约束、可选图像检查和报告。当前证据限于仓库代码、样例与测试；本说明不据此声称已有外部项目接入、生态合作或真实用户验证。
 
 ## 能做什么
 
@@ -44,7 +73,7 @@
 | [hanbings/fluorescence](https://github.com/hanbings/fluorescence) | 仓库说明了 MoonBit BMP/PNG 读取及图像模糊、取色等能力 | 覆盖部分格式与图像处理，不包含本项目的素材包验收流程；不将其描述为没有图像读取能力 |
 | [gmlewis/crc32](https://mooncakes.io/docs/gmlewis/crc32) / [moonbitlang/x/crypto](https://github.com/moonbitlang/x/tree/main/crypto) | CRC-32 与 SHA-256 通用算法 | 项目直接依赖前者验证 PNG CRC，依赖后者计算内容指纹，不重复实现哈希算法 |
 
-MoonBit 生态中的图像库已经能承担像素解码、编码与处理；片盒点检把规格清单、目录对照、内容格式提示与可归档报告组合成独立可依赖的库。它可接在 posterkit 生成或 MoonBitMark 转换后的交付环节，承担最终规格核对。
+片盒点检的复用单位是规格清单、目录对照与可归档报告，图像元数据检查是其中的可选能力。表中调研对象不代表合作方或采用方；本仓库没有提供 posterkit 或 MoonBitMark 的接入验证，不将它们列为已验证的消费端。
 
 ## 快速开始
 
@@ -132,7 +161,7 @@ import {
 }
 ```
 
-公开 API 概览（均只读头部、不解码像素）：
+公开 API 概览（不解码像素；目录扫描中的哈希与 PNG 结构检查可能读取完整文件）：
 
 - 尺寸解析：`png_dimensions` / `jpeg_dimensions` / `webp_dimensions` / `gif_dimensions` / `bmp_dimensions` / `tiff_dimensions` / `svg_dimensions` / `avif_dimensions` / `jp2_dimensions` / `ico_dimensions` / `psd_dimensions`，均接收 `Bytes` 返回 `(Int, Int)?`；
 - 内容格式识别：`detect_content_format(bytes)` 按文件头返回 `ImageFormat?`，`format_name(format)` 取规范小写名；
@@ -209,7 +238,7 @@ fn inspect(bytes : Bytes) -> Unit {
 
 ## 当前验证基线与复现说明
 
-本项目刻意把范围控制在可解释、可演示、可测试的一条链路：清单输入 → 文件点检 → HTML/JSON 交付报告。当前主分支的验证基线是 MoonBit `0.1.20260915 (2e1a46d)`；仓库依赖版本记录在 `moon.mod`，建议使用该版本或更新版本运行：
+本项目刻意把范围控制在可解释、可演示、可测试的一条链路：清单输入 → 文件点检 → HTML/JSON 交付报告。仓库依赖版本记录在 `moon.mod`；复现时先记录实际工具版本，再执行以下验证，其他工具链版本也须以检查结果为准：
 
 ```sh
 moon version --all
@@ -218,12 +247,15 @@ moon fmt --check
 moon fmt --check scripts/cli_smoke.mbtx
 moon check --target native --deny-warn
 moon test --target native
+moon run --target native examples/library_consumer
 moon run --target native scripts/cli_smoke.mbtx
 ```
 
-如果本地工具链早于上述基线，依赖注册表可能无法解析当前版本的 `moonbitlang/async` 和 `moonbitlang/x`；这属于工具链兼容问题，不应被误报为测试通过。Ubuntu 与 Windows 的公开 CI 会执行同一组原生检查和 CLI 回归。
+2026-10-17 本地复核使用 MoonBit `0.1.20261012 (748b63c)`：WSL Ubuntu / GCC 15.2 下无警告静态检查、56 项原生测试、独立库消费示例、CLI 回归及上述三个场景的报告断言均通过；Windows 下 `moon info`、`moon fmt` 及两项格式检查通过。本次未完成 Windows 原生测试，其构建环境仍需补齐。
 
-后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。选题上与 `moonbit-posterkit`、MoonBitMark 等生成/转换类项目的差异，见上文「与同类项目的区别」一节。
+早期工具链可能无法解析当前依赖；工具链兼容或依赖解析失败不能算作测试通过。仓库的 Ubuntu 与 Windows CI 配置均包含原生检查、独立库消费示例和 CLI 回归；配置存在本身不代表某次远端运行已通过。
+
+后续迭代优先做更好的错误提示、真实项目清单模板和测试覆盖，再考虑更多格式。复用边界与相邻实现的取舍见上文「生态调研与复用取舍」；预期用途及其验证依据见「三个可验证的预期使用场景」。
 
 ## 人工主导、AI 辅助说明
 
