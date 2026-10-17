@@ -20,9 +20,17 @@ pub fn parse_manifest_json(text : String) -> Manifest raise ManifestParseError {
     Some(message) => raise ManifestParseError::InvalidField(message)
     None => ()
   }
-  @json.from_json(json) catch {
+  let manifest : Manifest = @json.from_json(json) catch {
     error => raise ManifestParseError::InvalidJson("\{error}")
   }
+  for index, spec in manifest.assets {
+    match asset_spec_error(spec) {
+      Some(message) =>
+        raise ManifestParseError::InvalidField("assets[\{index}]: \{message}")
+      None => ()
+    }
+  }
+  manifest
 }
 
 ///|

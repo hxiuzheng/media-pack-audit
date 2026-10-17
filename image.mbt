@@ -945,6 +945,9 @@ fn format_error_message(format : ImageFormat) -> String {
 }
 
 ///|
+/// Audit a directory against typed constraints, including directly constructed
+/// AssetSpec values. Invalid constraints produce a FAIL item without reading or
+/// hashing that asset; they are never silently treated as omitted constraints.
 pub async fn scan_assets(
   asset_dir : String,
   manifest : Manifest,
@@ -997,21 +1000,19 @@ pub async fn scan_assets(
       })
       continue
     }
-    let dimensions_are_valid = match (spec.width, spec.height) {
-      (Some(width), Some(height)) => width > 0 && height > 0
-      (None, None) => true
-      _ => false
-    }
-    if spec.max_bytes <= 0 || !dimensions_are_valid {
-      results.push({
-        file: spec.file,
-        label: spec.label,
-        status: "FAIL",
-        observed: "—",
-        sha256: "—",
-        details: "max_bytes 必须为正数；width 和 height 必须同时省略或同时为正数",
-      })
-      continue
+    match asset_spec_error(spec) {
+      Some(message) => {
+        results.push({
+          file: spec.file,
+          label: spec.label,
+          status: "FAIL",
+          observed: "—",
+          sha256: "—",
+          details: message,
+        })
+        continue
+      }
+      None => ()
     }
     let path = join_asset_path(asset_dir, spec.file)
     if !contains_entry(entries, spec.file) {

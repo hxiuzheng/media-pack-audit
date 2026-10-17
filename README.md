@@ -170,6 +170,10 @@ import {
 - 起步清单：`scaffold_manifest(asset_dir)` 从目录生成 `ScaffoldResult`；
 - 通用工具：`sha256_bytes`、`parse_aspect` / `matches_aspect`、`closest_match`、`html_escape`。
 
+调用者也可以直接构造 `Manifest` / `AssetSpec`。`scan_assets` 会校验类型化规格：非正 `min_bytes`、下限高于 `max_bytes`、无效摘要、无效比例或未知格式均使对应项成为 `FAIL`，保留文件名与标签，且不读取该项文件内容或计算其摘要；不会忽略非法规则后返回通过。JSON 入口对相同约束抛出 `ManifestParseError`，其中下限高于上限也会在扫描前拒绝。
+
+独立消费包的受控回归覆盖直接构造的非法规格、HTML/JSON 失败报告、普通文本的精确大小与大写摘要，以及合法 SVG 尺寸/比例/格式约束。复现命令为 `moon test --target native -p hxiuzheng/media-pack-audit/examples/library_consumer`；这些夹具证明公开接口行为，不是维护者真实素材试用或外部采用记录。
+
 最小示例（按文件头识别并读取单张图片的尺寸）：
 
 ```moonbit
@@ -219,7 +223,7 @@ fn inspect(bytes : Bytes) -> Unit {
 
 素材项可选填写 `aspect`，值为 `W:H` 形式的正整数比例（例如 `16:9`、`4:3`、`1:1`）。工具用整数交叉相乘核对实际宽高是否精确符合该比例；例如要求 16:9 时，1920×1080 通过，而 1200×630（约 1.905:1）不通过。这是精确比例校验，不是近似判断；尺寸本身不满足精确比例时请勿填写该字段。
 
-素材项可选填写 `min_bytes`，值为正整数，表示交付文件不得小于该体积。工具按文件头识别实际图片格式，与扩展名不一致时报告“扩展名与内容不符”；也可选填写 `format` 断言文件的内容格式，值接受 `png`、`jpeg`/`jpg`、`webp`、`gif`、`bmp`、`tiff`/`tif`、`svg`、`avif`、`jp2`、`ico`/`cur`、`psd`（大小写不敏感），与文件头识别出的实际格式不一致时判为失败。格式识别只读文件头，不解码像素。
+素材项可选填写 `min_bytes`，值为不大于 `max_bytes` 的正整数，表示交付文件不得小于该体积。工具按文件头识别实际图片格式，与扩展名不一致时报告“扩展名与内容不符”；也可选填写 `format` 断言文件的内容格式，值接受 `png`、`jpeg`/`jpg`、`webp`、`gif`、`bmp`、`tiff`/`tif`、`svg`、`avif`、`jp2`、`ico`/`cur`、`psd`（大小写不敏感），与文件头识别出的实际格式不一致时判为失败。格式识别只读文件头，不解码像素。
 
 ## 项目结构
 
@@ -251,7 +255,7 @@ moon run --target native examples/library_consumer
 moon run --target native scripts/cli_smoke.mbtx
 ```
 
-2026-10-17 本地复核使用 MoonBit `0.1.20261012 (748b63c)`：WSL Ubuntu / GCC 15.2 下无警告静态检查、56 项原生测试、独立库消费示例、CLI 回归及上述三个场景的报告断言均通过；Windows 下 `moon info`、`moon fmt` 及两项格式检查通过。本次未完成 Windows 原生测试，其构建环境仍需补齐。
+2026-10-17 本地复核使用 MoonBit `0.1.20261012 (748b63c)`：WSL Ubuntu / GCC 15.2 下无警告静态检查、59 项原生测试、独立库消费示例和 CLI 回归均通过；Windows 下 `moon info`、两项格式检查及无警告静态检查通过。本次未完成 Windows 原生测试，其构建环境仍需补齐。
 
 早期工具链可能无法解析当前依赖；工具链兼容或依赖解析失败不能算作测试通过。仓库的 Ubuntu 与 Windows CI 配置均包含原生检查、独立库消费示例和 CLI 回归；配置存在本身不代表某次远端运行已通过。
 
