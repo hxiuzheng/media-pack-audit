@@ -64,12 +64,30 @@ pub fn detect_content_format(bytes : Bytes) -> ImageFormat? {
 }
 
 ///|
-/// True when the `ftyp` major brand of an ISO-BMFF file is an AVIF brand.
+/// Recognize AVIF image/sequence brands only in a complete, well-framed ftyp.
+/// A brand in minor_version, trailing bytes or another box is not evidence.
+/// Recognizing avis identifies the family; structural scanning still rejects
+/// sequence-only files because it only supports direct av01 primary items.
 fn is_avif_brand(bytes : Bytes) -> Bool {
-  bytes[8] == b'a' &&
-  bytes[9] == b'v' &&
-  bytes[10] == b'i' &&
-  (bytes[11] == b'f' || bytes[11] == b's')
+  let (start, end) = match box_payload(bytes, 0, bytes.length()) {
+    Some(range) => range
+    None => return false
+  }
+  if end - start < 8 || (end - start - 8) % 4 != 0 {
+    return false
+  }
+  if box_type_is(bytes, start, b"avif") || box_type_is(bytes, start, b"avis") {
+    return true
+  }
+  let mut offset = start + 8
+  while offset < end {
+    if box_type_is(bytes, offset, b"avif") ||
+      box_type_is(bytes, offset, b"avis") {
+      return true
+    }
+    offset += 4
+  }
+  false
 }
 
 ///|
@@ -83,7 +101,28 @@ async fn detect_content_format_from_file(
   let header_length = if size > 4096L { 4096 } else { Int64::to_int(size) }
   let file = @fs.open(path, mode=@fs.ReadOnly)
   defer file.close()
-  let header = file.read_exactly_at(header_length, position=0L)
+  let mut header = file.read_exactly_at(header_length, position=0L)
+  // Most signatures fit in 4 KiB. An ftyp with a longer brand list must be
+  // read completely, within the same 4 MiB metadata cap as structural AVIF.
+  if header_length >= 16 && box_type_is(header, 4, b"ftyp") {
+    let size32 = be_u32(header, 0)
+    let box_size = if size32 == 1L {
+      if header[8].to_int() >= 128 {
+        return None
+      }
+      be_u64(header, 8)
+    } else if size32 == 0L {
+      size
+    } else {
+      size32
+    }
+    if box_size > size || box_size > 4_194_304L {
+      return None
+    }
+    if box_size > Int32::to_int64(header_length) {
+      header = file.read_exactly_at(Int64::to_int(box_size), position=0L)
+    }
+  }
   detect_content_format(header)
 }
 
@@ -160,6 +199,57 @@ test "does not misclassify unrelated or truncated data" {
   // A generic MP4 ftyp brand is not AVIF.
   assert_true(
     detect_content_format(b"\x00\x00\x00\x10ftypisom\x00\x00\x00\x00") is None,
+  )
+}
+
+///|
+test "detects AVIF compatible brands inside a complete ftyp only" {
+  let compatible = b"\x00\x00\x00\x18ftypmif1\x00\x00\x00\x00miafavif"
+  assert_true(detect_content_format(compatible) == Some(ImageFormat::Avif))
+  let sequence = b"\x00\x00\x00\x14ftypmsf1\x00\x00\x00\x00avis"
+  assert_true(detect_content_format(sequence) == Some(ImageFormat::Avif))
+  let extended = b"\x00\x00\x00\x01ftyp\x00\x00\x00\x00\x00\x00\x00\x1Cmif1\x00\x00\x00\x00avif"
+  assert_true(detect_content_format(extended) == Some(ImageFormat::Avif))
+  for length in 0..<compatible.length() {
+    assert_true(detect_content_format(compatible[0:length].to_owned()) is None)
+  }
+  for
+    bytes in [
+      b"\x00\x00\x00\x10ftypmif1\x00\x00\x00\x00avif", b"\x00\x00\x00\x10ftypisomavif",
+      b"\x00\x00\x00\x0Cftypavif", b"\x00\x00\x00\x15ftypmif1\x00\x00\x00\x00avifX",
+      b"\x00\x00\x00\x18ftypmif1\x00\x00\x00\x00heicmiaf", b"\x00\x00\x00\x01ftyp\x80\x00\x00\x00\x00\x00\x00\x00avif",
+    ] {
+    assert_true(detect_content_format(bytes) is None)
+  }
+}
+
+///|
+async test "file detection reads a complete bounded ftyp beyond the signature prefix" {
+  let directory = "_build/format-brand-regression"
+  if !@fs.exists(directory) {
+    @fs.mkdir(directory, recursive=true)
+  }
+  let path = directory + "/long-brands.avif"
+  // 4116-byte ftyp: the only AVIF brand is beyond the initial 4096-byte read.
+  let bytes = b"\x00\x00\x10\x14ftypmif1\x00\x00\x00\x00" +
+    Bytes::make(4096, b'X') +
+    b"avif"
+  @fs.write_file(path, bytes)
+  assert_true(
+    detect_content_format_from_file(path, Int32::to_int64(bytes.length())) ==
+    Some(ImageFormat::Avif),
+  )
+  // A size-zero box extends to the actual file end, not the 4 KiB prefix end.
+  let oversized = directory + "/oversized-brands.avif"
+  let too_large = b"\x00\x00\x00\x00ftypavif\x00\x00\x00\x00" +
+    Bytes::make(4_194_304, b'X')
+  @fs.write_file(oversized, too_large)
+  assert_true(
+    detect_content_format_from_file(
+      oversized,
+      Int32::to_int64(too_large.length()),
+    )
+    is None,
   )
 }
 

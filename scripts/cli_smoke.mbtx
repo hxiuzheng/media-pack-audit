@@ -123,11 +123,14 @@ async fn main {
   }
 
   // Patch exactly one field of the real AVIF while keeping ispe, ipma, file
-  // size and manifest expectations unchanged. Each case gets a fresh directory.
+  // size and manifest expectations unchanged. Also exercise a compatible brand
+  // and explicit refusal of a sequence-only brand. Each case has its own directory.
   let avif_original = @fs.read_file("examples/formats/assets/hero.avif").binary()
   for
     (name, offset, value, code, diagnostic_offset, item) in [
       ("valid", 0, avif_original[0], "", 0, 0),
+      ("compatible-brand", 8, b'm', "", 0, 0),
+      ("sequence-only", 0, avif_original[0], "UNSUPPORTED_BRAND", 8, 0),
       ("undeclared-primary", 148, b'\x02', "UNDECLARED_PRIMARY", 89, 1),
       ("extent-outside-mdat", 116, b'\x00', "EXTENT_NOT_IN_MDAT", 113, 1),
       ("property-out-of-range", 263, b'\x7F', "PROPERTY_INDEX", 263, 1),
@@ -138,6 +141,15 @@ async fn main {
     }
     let data = avif_original.to_array()
     data[offset] = value
+    if name == "compatible-brand" {
+      // Change the major brand to mif1; preserve compatible avif at offset 16.
+      data[9] = b'i'
+      data[10] = b'f'
+      data[11] = b'1'
+    } else if name == "sequence-only" {
+      data[11] = b's'
+      data[19] = b's'
+    }
     @fs.write_file("\{dir}/assets/hero.avif", Bytes::from_array(data))
     @fs.write_file(
       "\{dir}/media-pack.json",
@@ -164,7 +176,11 @@ async fn main {
       }
     } else {
       let marker = "AVIF[\{code}]"
-      let location = "offset=\{diagnostic_offset} item=\{item}"
+      let location = if item == 0 {
+        "offset=\{diagnostic_offset}"
+      } else {
+        "offset=\{diagnostic_offset} item=\{item}"
+      }
       if command.exit_code() != 1 ||
         !json.contains(marker) ||
         !html.contains(marker) ||
@@ -848,7 +864,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), AVIF structure valid=0 and undeclared item/extent/property=1 with located JSON+HTML diagnostics, init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), AVIF structure valid/compatible-brand=0 and sequence-only/undeclared item/extent/property=1 with located JSON+HTML diagnostics, init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 

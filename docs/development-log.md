@@ -2,6 +2,19 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-10-20 18:21 阶段：兼容品牌识别与 Windows 格式检查
+
+- 开始时确认 `main`、`origin/main` 均为 16:00 阶段的 `8f4560c`，工作区干净；该提交的 [CI #39392480913](https://github.com/hxiuzheng/media-pack-audit/actions/runs/39392480913) 为 Ubuntu 全部通过、Windows Format 失败。本阶段衔接已有结构核心，没有重复实现或修改申报书。
+- 先加入兼容品牌回归，旧代码为 73/74 通过、新用例失败；修复 `content_format.mbt`，按完整 `ftyp` 的实际载荷边界检查主品牌和兼容品牌，支持普通/扩展盒头，不把 minor_version、盒外伪品牌、截断或不完整品牌字段当成 AVIF。文件入口对超过初始 4 KiB 的品牌列表按需补读，最多 4 MiB；相关异步回归验证长品牌表与超限 size-zero 盒。显式导入已有 async 依赖供包内异步测试使用。
+- CLI smoke 在真实 `hero.avif` 上只把主品牌改为 `mif1`，保留兼容 `avif`，要求清单的 `format: avif`、640×360 和结构校验均通过；另将主/兼容品牌均改为 `avis`，确认家族识别不被误称为序列支持，结构扫描以 `UNSUPPORTED_BRAND` 拒绝并保留报告定位。
+- 隔离下载官方当前工具链，实际版本与 CI 一致：Moon `0.1.20261016 (1af328f)`、moonc `0.10.16+b1a0e846e`。在临时克隆的 CRLF 检出上复现 Windows 格式错误，确认报错的 formatter 输出文件用普通路径及扩展路径均实际存在，而 Git 对 `\\?\` 参数报无法读取；普通路径可以对比。新鲜检出的对照中，将格式输入固定为 LF 后项目和脚本两项 `moon fmt --check` 均退出 0；故意添加未格式化源码仍非零退出。证据限定为本次受控复现，不再将根因猜作并行竞态。
+- 新增 `.gitattributes`，对 `*.mbt`、`*.mbtx`、`*.mbti`、`moon.mod`、`moon.pkg` 固定 LF，覆盖 Windows 的 `core.autocrlf=true`；保留 CI 的格式检查和后续所有步骤，没有忽略失败、修改工作流或更换身份来绕过权限。创建者令牌此前缺少 workflow scope，本方案无需该额外权限。
+- README 同步当前支持范围和排查依据。`moon info` 由与 CI 相同的新工具链生成，接口将原先的 `Int` 别名显式输出为源码使用的 `Int32`；未增删公开函数、字段或改变其整数宽度。
+
+本阶段由 Codex 辅助实施与验证。Windows 隔离工具链 `0.1.20261016` 的 `moon update`、`moon info`、`moon fmt`、脚本格式化、两项格式检查及 `moon check --target native --deny-warn` 均通过；Windows 本机仍没有可用原生 C 编译器，未把静态检查称为原生运行。WSL Ubuntu / GCC 15.2、Moon `0.1.20261012` 下原生测试 **75/75** 和完整 CLI smoke 均通过，含独立库示例连续两次运行、兼容品牌 format 断言、序列拒绝及既有回归。最终提交的双平台结果待普通推送后核对对应 Actions，不以旧提交的结果代替。
+
+给 20:13 阶段：复核本阶段提交的同一 SHA 是否完成 Ubuntu/Windows 全部 CI 步骤，再核对核心、README、生成接口、演示与申报书既有描述的一致性；申报书仍不修改。本人源码理解、赛道沟通事实及最终重提决定仍需参赛者确认，AI 不代替签字或宣称组委会必然认可。
+
 ## 2026-10-20 16:00 阶段：AVIF 有界结构一致性验证核心
 
 - 此前 `pitm/ipma/ispe` 修复只解决主图尺寸选择。本阶段新增独立的 MoonBit 结构校验核心，串联 `pitm → iinf/infe → ipma/ipco → iloc → mdat/idat`，检查主图声明、全部属性引用、主图配置与可选 pixi 位深/通道关系，以及显式数据区间的来源归属。允许多区间、共享区间和 idat 相对地址；在加法前检查父范围，限制 unsigned 64 位值、盒数量、item 数、关联数和区间数。

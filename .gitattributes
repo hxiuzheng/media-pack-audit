@@ -1,0 +1,8 @@
+# Moon's formatter emits LF. Keep its inputs identical on Windows and Unix.
+# In particular this overrides core.autocrlf=true on Windows CI checkouts.
+*.mbt text eol=lf
+*.mbtx text eol=lf
+*.mbti text eol=lf
+moon.mod text eol=lf
+moon.pkg text eol=lf
+.gitattributes text eol=lf

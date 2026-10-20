@@ -7,9 +7,9 @@ import {
 }
 
 // Values
-pub fn avif_dimensions(Bytes) -> (Int, Int)?
+pub fn avif_dimensions(Bytes) -> (Int32, Int32)?
 
-pub fn bmp_dimensions(Bytes) -> (Int, Int)?
+pub fn bmp_dimensions(Bytes) -> (Int32, Int32)?
 
 pub fn canonical_format(String) -> String?
 
@@ -19,11 +19,11 @@ pub fn detect_content_format(Bytes) -> ImageFormat?
 
 pub fn format_name(ImageFormat) -> String
 
-pub fn gif_dimensions(Bytes) -> (Int, Int)?
+pub fn gif_dimensions(Bytes) -> (Int32, Int32)?
 
 pub fn html_escape(String) -> String
 
-pub fn ico_dimensions(Bytes) -> (Int, Int)?
+pub fn ico_dimensions(Bytes) -> (Int32, Int32)?
 
 pub fn image_format(String) -> ImageFormat?
 
@@ -31,19 +31,19 @@ pub async fn inspect_avif_file(String) -> Result[AvifStructure, AvifDiagnostic]
 
 pub fn inspect_avif_structure(Bytes, Int64) -> Result[AvifStructure, AvifDiagnostic]
 
-pub fn jp2_dimensions(Bytes) -> (Int, Int)?
+pub fn jp2_dimensions(Bytes) -> (Int32, Int32)?
 
-pub fn jpeg_dimensions(Bytes) -> (Int, Int)?
+pub fn jpeg_dimensions(Bytes) -> (Int32, Int32)?
 
-pub fn matches_aspect(Int, Int, Int, Int) -> Bool
+pub fn matches_aspect(Int32, Int32, Int32, Int32) -> Bool
 
-pub fn parse_aspect(String) -> (Int, Int)?
+pub fn parse_aspect(String) -> (Int32, Int32)?
 
 pub fn parse_manifest_json(String) -> Manifest raise ManifestParseError
 
-pub fn png_dimensions(Bytes) -> (Int, Int)?
+pub fn png_dimensions(Bytes) -> (Int32, Int32)?
 
-pub fn psd_dimensions(Bytes) -> (Int, Int)?
+pub fn psd_dimensions(Bytes) -> (Int32, Int32)?
 
 pub fn render_html(AuditReport) -> String
 
@@ -53,11 +53,11 @@ pub async fn scan_assets(String, Manifest, String) -> AuditReport
 
 pub fn sha256_bytes(Bytes) -> String
 
-pub fn svg_dimensions(Bytes) -> (Int, Int)?
+pub fn svg_dimensions(Bytes) -> (Int32, Int32)?
 
-pub fn tiff_dimensions(Bytes) -> (Int, Int)?
+pub fn tiff_dimensions(Bytes) -> (Int32, Int32)?
 
-pub fn webp_dimensions(Bytes, Int64) -> (Int, Int)?
+pub fn webp_dimensions(Bytes, Int64) -> (Int32, Int32)?
 
 // Errors
 pub suberror ManifestParseError {
@@ -70,10 +70,10 @@ pub suberror ManifestParseError {
 pub(all) struct AssetSpec {
   file : String
   label : String?
-  width : Int?
-  height : Int?
-  max_bytes : Int
-  min_bytes : Int?
+  width : Int32?
+  height : Int32?
+  max_bytes : Int32
+  min_bytes : Int32?
   expected_sha256 : String?
   aspect : String?
   format : String?
@@ -84,9 +84,9 @@ pub fn AssetSpec::to_json(Self) -> Json
 pub(all) struct AuditReport {
   asset_dir : String
   manifest_sha256 : String
-  checked : Int
-  passed : Int
-  failed : Int
+  checked : Int32
+  passed : Int32
+  failed : Int32
   results : Array[CheckResult]
 } derive(ToJson)
 pub fn AuditReport::to_json(Self) -> Json
@@ -110,9 +110,9 @@ pub fn AvifExtent::to_repr(Self) -> @debug.Repr
 
 pub(all) struct AvifStructure {
   primary_item_id : Int64
-  width : Int
-  height : Int
-  item_count : Int
+  width : Int32
+  height : Int32
+  item_count : Int32
   extents : Array[AvifExtent]
 } derive(@debug.Debug)
 pub fn AvifStructure::to_repr(Self) -> @debug.Repr
@@ -145,14 +145,14 @@ pub fn ImageFormat::not_equal(Self, Self) -> Bool
 
 pub(all) struct Manifest {
   assets : Array[AssetSpec]
-  max_total_bytes : Int?
+  max_total_bytes : Int32?
 } derive(ToJson, @json.FromJson)
 pub fn Manifest::from_json(Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn Manifest::to_json(Self) -> Json
 
 pub(all) struct ScaffoldResult {
   manifest : String
-  generated : Int
+  generated : Int32
   skipped : Array[String]
 }
 
