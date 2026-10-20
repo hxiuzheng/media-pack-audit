@@ -8,6 +8,7 @@
 - AVIF 尺寸读取由“在 `ipco` 中找到第一个 `ispe`”改为按 ISOBMFF 项目关系解析：读取 `pitm` 主 item，解析 `ipma` 中该 item 的属性关联索引，再按一基索引定位 `ipco` 属性。解析期间验证属性盒边界、索引范围、FullBox 版本/标志、关联表长度，并拒绝缺失或多个冲突的主图 `ispe`。
 - 增加多 item 回归：缩略图的 `ispe` 先于主图出现时仍应选择主图尺寸；未关联的 `ispe` 不可冒充主图尺寸。原有真实 AVIF 样例继续覆盖完整读取入口。
 - 本次类型检查 `moon check --target native --deny-warn` 通过。当前 Windows 环境没有 MSVC/clang-cl 原生链接器，`moon test --target native` 因缺少 Windows C++ Build Tools/Windows SDK 无法启动；原生单测和 CLI smoke 的最终结果以仓库创建者账号触发的 CI 为准，未把未执行的检查写成通过。
+- 提交 `adc34e9` 的 [GitHub Actions #39386616392](https://github.com/hxiuzheng/media-pack-audit/actions/runs/39386616392) 中 Ubuntu job 的格式、无警告检查、60 项测试、独立消费示例与完整 CLI smoke 全部通过。Windows job 在 Format 步骤因 MoonBit formatter 临时输出路径不存在而中止，未执行 Windows 原生测试；该步骤在开发机 Windows 本地格式检查通过，但 CI 的 Windows 结果仍待修复其 runner/formatter 问题后补验。
 
 ## 2026-10-17：明确十月维护证据并修复消费示例重复运行
 
