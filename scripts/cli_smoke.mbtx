@@ -123,14 +123,23 @@ async fn main {
   }
 
   // Patch exactly one field of the real AVIF while keeping ispe, ipma, file
-  // size and manifest expectations unchanged. Also exercise a compatible brand
-  // and explicit refusal of a sequence-only brand. Each case has its own directory.
+  // size and manifest expectations unchanged. Additional cases exercise brands
+  // and complete-header/prefix bounds. Each case has its own directory.
   let avif_original = @fs.read_file("examples/formats/assets/hero.avif").binary()
   for
     (name, offset, value, code, diagnostic_offset, item) in [
       ("valid", 0, avif_original[0], "", 0, 0),
       ("compatible-brand", 8, b'm', "", 0, 0),
       ("sequence-only", 0, avif_original[0], "UNSUPPORTED_BRAND", 8, 0),
+      ("nested-size-zero", 200, b'\x00', "BOX_SIZE_ZERO", 197, 0),
+      (
+        "uuid-prefix-boundary",
+        0,
+        avif_original[0],
+        "LIMIT_METADATA",
+        4_194_296,
+        0,
+      ),
       ("undeclared-primary", 148, b'\x02', "UNDECLARED_PRIMARY", 89, 1),
       ("extent-outside-mdat", 116, b'\x00', "EXTENT_NOT_IN_MDAT", 113, 1),
       ("property-out-of-range", 263, b'\x7F', "PROPERTY_INDEX", 263, 1),
@@ -150,11 +159,41 @@ async fn main {
       data[11] = b's'
       data[19] = b's'
     }
-    @fs.write_file("\{dir}/assets/hero.avif", Bytes::from_array(data))
+    let bytes = if name == "uuid-prefix-boundary" {
+      // Place the 16-byte UUID user type just beyond the bounded file reader.
+      // Its box framing is complete, but this header cannot be validated from
+      // the first 4 MiB and must produce a limit diagnostic.
+      let padding_size = 4_194_304 - avif_original.length() - 8
+      let header : Array[Byte] = []
+      for shift in [24, 16, 8, 0] {
+        header.push(((padding_size >> shift) & 255).to_byte())
+      }
+      avif_original +
+      Bytes::from_array(header) +
+      b"free" +
+      Bytes::make(padding_size - 8, b'\x00') +
+      b"\x00\x00\x00\x18uuid" +
+      Bytes::make(16, b'\x00')
+    } else {
+      Bytes::from_array(data)
+    }
+    @fs.write_file("\{dir}/assets/hero.avif", bytes)
+    let max_bytes = if name == "uuid-prefix-boundary" {
+      5_000_000
+    } else {
+      1000
+    }
     @fs.write_file(
       "\{dir}/media-pack.json",
-      "{\"assets\":[{\"file\":\"hero.avif\",\"format\":\"avif\",\"width\":640,\"height\":360,\"max_bytes\":1000}]}",
+      "{\"assets\":[{\"file\":\"hero.avif\",\"format\":\"avif\",\"width\":640,\"height\":360,\"max_bytes\":\{max_bytes}}]}",
     )
+    // A failed CLI invocation must not be able to reuse an earlier report.
+    for report in ["report.json", "report.html"] {
+      let path = "\{dir}/report/\{report}"
+      if @fs.exists(path) {
+        @fs.remove(path)
+      }
+    }
     let command = @shell.Cmd("moon", [
       "run",
       "--target",
@@ -864,7 +903,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), AVIF structure valid/compatible-brand=0 and sequence-only/undeclared item/extent/property=1 with located JSON+HTML diagnostics, init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), AVIF structure valid/compatible-brand=0 and sequence-only/box-header boundaries/undeclared item/extent/property=1 with located JSON+HTML diagnostics, init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 

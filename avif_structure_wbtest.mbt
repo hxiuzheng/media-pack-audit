@@ -452,3 +452,44 @@ test "AVIF every truncated prefix fails safely and full input succeeds" {
     inspect_avif_structure(bytes, Int32::to_int64(bytes.length())) is Ok(_),
   )
 }
+
+///|
+test "AVIF prefix must include the complete UUID user type header" {
+  let bytes = avif_test_file()
+  for
+    header in [
+      b"\x00\x00\x00\x18uuid" + Bytes::make(16, b'\x00'),
+      b"\x00\x00\x00\x01uuid\x00\x00\x00\x00\x00\x00\x00\x20" +
+      Bytes::make(16, b'\x00'),
+    ] {
+    let complete = bytes + header
+    let file_size = Int32::to_int64(complete.length())
+    assert_true(inspect_avif_structure(complete, file_size) is Ok(_))
+    let ordinary_header_length = if header.length() == 24 { 8 } else { 16 }
+    for length in ordinary_header_length..<header.length() {
+      let prefix = bytes + header[0:length].to_owned()
+      match inspect_avif_structure(prefix, file_size) {
+        Err(error) => {
+          assert_eq(error.code, "LIMIT_METADATA")
+          assert_eq(error.box_type, "uuid")
+          assert_eq(error.offset, Int32::to_int64(bytes.length()))
+        }
+        Ok(_) =>
+          fail("a partial UUID user type must not pass the prefix contract")
+      }
+    }
+  }
+}
+
+///|
+test "AVIF size-zero boxes are permitted only at the file top level" {
+  let bytes = avif_test_file()
+  let nested = avif_test_patch(bytes, b"pixi", -8, b"\x00\x00\x00\x00")
+  assert_true(avif_dimensions(nested) == Some((640, 360)))
+  avif_test_error(nested, "BOX_SIZE_ZERO", None)
+  let top_level = avif_test_patch(bytes, b"mdat", -8, b"\x00\x00\x00\x00")
+  assert_true(
+    inspect_avif_structure(top_level, Int32::to_int64(top_level.length()))
+    is Ok(_),
+  )
+}

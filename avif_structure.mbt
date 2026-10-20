@@ -217,6 +217,7 @@ fn avif_nodes(
   start : Int64,
   end : Int64,
   budget : AvifBudget,
+  top_level~ : Bool = false,
 ) -> Array[AvifNode] raise AvifStructureFailure {
   let nodes : Array[AvifNode] = []
   let mut position = start
@@ -251,6 +252,14 @@ fn avif_nodes(
     let mut header_size = 8L
     let size32 = be_u32(bytes, index)
     let size = if size32 == 0L {
+      avif_need(
+        top_level,
+        "BOX_SIZE_ZERO",
+        kind,
+        position,
+        None,
+        "size=0 只能用于延伸至文件末尾的顶层盒",
+      )
       end - position
     } else if size32 == 1L {
       avif_need(
@@ -285,6 +294,14 @@ fn avif_nodes(
       position,
       None,
       "声明盒大小超出所属容器",
+    )
+    avif_need(
+      position <= Int32::to_int64(bytes.length()) - header_size,
+      "LIMIT_METADATA",
+      kind,
+      position,
+      None,
+      "完整盒头（含 UUID user type）必须位于提供的元数据前缀中",
     )
     nodes.push({
       kind,
@@ -897,7 +914,7 @@ fn avif_inspect(
     payload: 0L,
     end: file_size,
   }
-  let top = avif_nodes(prefix, 0L, file_size, budget)
+  let top = avif_nodes(prefix, 0L, file_size, budget, top_level=true)
   avif_need(
     top.length() > 0 && top[0].kind == "ftyp",
     "MISSING_FTYP",
