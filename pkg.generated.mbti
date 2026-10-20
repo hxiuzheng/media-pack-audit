@@ -2,6 +2,7 @@
 package "hxiuzheng/media-pack-audit"
 
 import {
+  "moonbitlang/core/debug",
   "moonbitlang/core/json",
 }
 
@@ -25,6 +26,10 @@ pub fn html_escape(String) -> String
 pub fn ico_dimensions(Bytes) -> (Int, Int)?
 
 pub fn image_format(String) -> ImageFormat?
+
+pub async fn inspect_avif_file(String) -> Result[AvifStructure, AvifDiagnostic]
+
+pub fn inspect_avif_structure(Bytes, Int64) -> Result[AvifStructure, AvifDiagnostic]
 
 pub fn jp2_dimensions(Bytes) -> (Int, Int)?
 
@@ -85,6 +90,32 @@ pub(all) struct AuditReport {
   results : Array[CheckResult]
 } derive(ToJson)
 pub fn AuditReport::to_json(Self) -> Json
+
+pub(all) struct AvifDiagnostic {
+  code : String
+  box_type : String
+  offset : Int64
+  item_id : Int64?
+  detail : String
+} derive(@debug.Debug)
+pub fn AvifDiagnostic::to_repr(Self) -> @debug.Repr
+
+pub(all) struct AvifExtent {
+  item_id : Int64
+  offset : Int64
+  length : Int64
+  storage : String
+} derive(@debug.Debug)
+pub fn AvifExtent::to_repr(Self) -> @debug.Repr
+
+pub(all) struct AvifStructure {
+  primary_item_id : Int64
+  width : Int
+  height : Int
+  item_count : Int
+  extents : Array[AvifExtent]
+} derive(@debug.Debug)
+pub fn AvifStructure::to_repr(Self) -> @debug.Repr
 
 pub(all) struct CheckResult {
   file : String

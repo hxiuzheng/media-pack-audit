@@ -14,6 +14,7 @@
 | 通用目录清单生成及转义修复 | `init` 纳入普通文件；生成含控制字符路径时使用合法 JSON 转义，保留图片尺寸的可选生成 | [`4daa2f7`](https://github.com/hxiuzheng/media-pack-audit/commit/4daa2f7) 至 [`25f16e4`](https://github.com/hxiuzheng/media-pack-audit/commit/25f16e4)；`manifest.mbt` 单测与 CLI 草稿回读、拒绝覆盖场景 |
 | 直接库调用的约束校验 | 修复直接构造规格时非法约束可能被忽略的问题；与 JSON 入口共用规则并拒绝矛盾大小区间 | [`163a9d3`](https://github.com/hxiuzheng/media-pack-audit/commit/163a9d3)；独立消费包的 3 项测试及 CLI 无效清单回归 |
 | AVIF 主图元数据关联解析 | 不再把 `ipco` 中第一个 `ispe` 当作主图尺寸；解析 `pitm` 主 item 与 `ipma` 属性索引，再按索引解析 `ipco`，区分主图和缩略图并拒绝缺失、越界或含糊关联 | `avif.mbt` 的多 item 回归：缩略图先出现时仍选主图；未关联的 `ispe` 被拒绝；扩展属性结构边界检查 |
+| AVIF 有界结构一致性核心 | 串联 `pitm → iinf/infe → ipma/ipco → iloc → mdat/idat`，验证 item 引用、属性索引、主图尺寸/配置/位深关系及数据区间归属；公开纯函数和文件入口返回可定位诊断 | `avif_structure.mbt`、`avif_structure_file.mbt`；`avif_structure_wbtest.mbt` 的单约束破坏对照与边界回归；CLI smoke 的真实 AVIF 变异样例与跨包消费 |
 
 十月还适配了 MoonBit `0.1.20261012` 的类型与接口写法；这属于工具链维护。直接构造 `AssetSpec` 的旧调用者须把必填的 `width`/`height` 改为 `Some(宽)`/`Some(高)`，或同时使用 `None`；旧 JSON 清单中成对的整数尺寸仍可使用。当前公开字段及函数签名见 `pkg.generated.mbti`。
 
@@ -74,7 +75,35 @@ moon run --target native cmd/main -- _build/scenarios/draft.json examples/librar
 - 输出带中文界面的独立 HTML 报告和机器可读 JSON 报告；报告对文件名和文本做 HTML 转义。
 - 只读检查输入文件，不会改写或删除素材。
 
-清单可列出任意普通文件，通用检查覆盖路径、存在性、大小、摘要和未登记文件；图像元数据仅支持以下格式。扩展名接受 `.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.bmp`、`.tif`、`.tiff`、`.svg`、`.avif`、`.jp2`、`.ico`、`.cur`、`.psd`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF（存在有效 EXIF Orientation 时换算成显示方向）、WebP 的 VP8/VP8L 头或 VP8X 画布字段、GIF 逻辑屏幕描述符、BMP 的 DIB 尺寸头、TIFF 的 ImageWidth/ImageLength 标签、SVG 的 width/height 属性或 viewBox（仅整数）、AVIF 主 item 关联的 ispe 属性、JPEG 2000 的 ihdr 盒、ICO/CUR 首项目录项以及 PSD 头。AVIF 仅解析 `pitm` 主 item、`ipma` 属性关联和 `ipco` 中的 `ispe` 尺寸，元数据扫描限于文件开头 4 MiB；它不解析 `iloc` 图像数据位置、不检查 AV1 码流，也不解码像素。WebP 检查 RIFF 声明长度、块边界、必需的图像数据块和零填充，但不解析完整扩展元数据语义或动画帧数据。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。WebP 字段依据 [Google WebP 容器规范](https://developers.google.com/speed/webp/docs/riff_container)、[VP8 数据格式规范（RFC 6386）](https://datatracker.ietf.org/doc/html/rfc6386) 与 [WebP Lossless Bitstream 规范](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification)。JPEG 元数据扫描最多读取文件开头 4 MiB；没有有效 EXIF Orientation 时，报告沿用 SOF 中存储的宽高。GIF 只检查画布宽高，不读取帧数或动画时序。对于未超过 `max_bytes` 的受支持图片，工具会以 64 KiB 缓冲区读取完整文件并记录 SHA-256；这可能需要比读取尺寸头更长的时间。超限文件显示 `—`，表示未计算哈希，但 PNG CRC 与结构检查仍会流式读取整个 PNG，WebP RIFF 检查仍会逐块读取块头和奇数长度填充字节。SHA-256 依赖固定版本 `moonbitlang/x@0.5.5` 的 [crypto 包](https://github.com/moonbitlang/x/tree/main/crypto)；该模块属于实验性包，项目锁定版本并只用其哈希功能。指纹仅用于内容比对，不是来源认证或数字签名。工具不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
+清单可列出任意普通文件，通用检查覆盖路径、存在性、大小、摘要和未登记文件；图像元数据仅支持以下格式。扩展名接受 `.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.bmp`、`.tif`、`.tiff`、`.svg`、`.avif`、`.jp2`、`.ico`、`.cur`、`.psd`，扩展名大小写不敏感，但清单路径必须使用 `/` 分隔，并与实际相对路径精确匹配（包括大小写）。绝对路径、反斜线和 `..` 路径段会被拒绝；扫描不跟随符号链接。尺寸来自 PNG IHDR、JPEG SOF（存在有效 EXIF Orientation 时换算成显示方向）、WebP 的 VP8/VP8L 头或 VP8X 画布字段、GIF 逻辑屏幕描述符、BMP 的 DIB 尺寸头、TIFF 的 ImageWidth/ImageLength 标签、SVG 的 width/height 属性或 viewBox（仅整数）、AVIF 主 item 关联的 ispe 属性、JPEG 2000 的 ihdr 盒、ICO/CUR 首项目录项以及 PSD 头。AVIF 扫描使用下节定义的有界结构一致性验证：关联主图声明、属性和 `iloc` 数据区间；元数据读取限于文件开头 4 MiB，不检查 AV1 码流或解码像素。WebP 检查 RIFF 声明长度、块边界、必需的图像数据块和零填充，但不解析完整扩展元数据语义或动画帧数据。PNG 校验 IHDR CRC、标准规定的位深/颜色类型组合与方法值，并流式校验每个块的长度边界和 CRC，以及首块 IHDR、连续 IDAT、末块 IEND 等基本结构；它不执行完整的块类型语义验证，也不解压 IDAT 或解码像素。因此，这不等同于完整图像解码器或视觉验收；这些 PNG 规则依据 [W3C PNG 规范](https://www.w3.org/TR/png-3/)。WebP 字段依据 [Google WebP 容器规范](https://developers.google.com/speed/webp/docs/riff_container)、[VP8 数据格式规范（RFC 6386）](https://datatracker.ietf.org/doc/html/rfc6386) 与 [WebP Lossless Bitstream 规范](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification)。JPEG 元数据扫描最多读取文件开头 4 MiB；没有有效 EXIF Orientation 时，报告沿用 SOF 中存储的宽高。GIF 只检查画布宽高，不读取帧数或动画时序。对于未超过 `max_bytes` 的受支持图片，工具会以 64 KiB 缓冲区读取完整文件并记录 SHA-256；这可能需要比读取尺寸头更长的时间。超限文件显示 `—`，表示未计算哈希，但 PNG CRC 与结构检查仍会流式读取整个 PNG，WebP RIFF 检查仍会逐块读取块头和奇数长度填充字节。SHA-256 依赖固定版本 `moonbitlang/x@0.5.5` 的 [crypto 包](https://github.com/moonbitlang/x/tree/main/crypto)；该模块属于实验性包，项目锁定版本并只用其哈希功能。指纹仅用于内容比对，不是来源认证或数字签名。工具不检查色彩配置、透明边缘或视觉内容。GIF 字段依据 [GIF89a 规范](https://www.w3.org/Graphics/GIF/spec-gif89a.txt)。
+
+## AVIF 有界结构一致性验证
+
+这项十月增量在 MoonBit 中自行实现 item、属性与数据来源之间的约束检查。CRC-32、SHA-256 仍复用已有依赖，不计入这项核心；不依赖 Pillow 或 libavif 执行检查。格式依据为 [AOM AVIF §2 图像属性、§6 品牌与 §9 文件结构](https://aomediacodec.github.io/av1-avif/)，并参考 [libavif 的 ISOBMFF 读取实现](https://github.com/AOMediaCodec/libavif/blob/main/src/read.c)核对字段版本和宽度。以下是实现的子集，不代表完整 AVIF/HEIF 合规性认证。
+
+| 关系或边界 | 本实现检查 |
+|---|---|
+| 主图与声明 | `pitm` 指向唯一、非零的 `iinf/infe` 声明，主图类型须为直接 `av01`；计数与实际条目一致，拒绝重复 ID |
+| 属性引用 | 所有 `ipma` 的 item 必须已声明，每个表内 ID 递增且跨表唯一；同版本/flags 表不得重复；所有非零属性索引须落在 `ipco` 中，包括次要 item 的索引 |
+| 主图属性 | 主图须关联唯一 `ispe` 和 `av1C`；检查正尺寸、配置头和位深标志；如果关联了 `pixi`，其通道数与各通道位深须与 `av1C` 一致。尺寸是存储画布尺寸，不应用旋转或裁剪属性 |
+| 数据来源 | `iloc` 条目须引用已声明 item 且不得重复，主图须有位置；解析 base + extent offset，显式正长度区间须完整落在单个 `mdat` 载荷中，或相对当前 `meta/idat` 载荷。允许多段和跨 item 共享区间，不把共享内容误判为重叠错误 |
+| 有界读取 | 先按父盒边界检查盒长和字段宽度，再做偏移运算；扩展盒长与字段值超过有符号 Int64 范围明确返回不支持。大文件的末尾 `mdat` 载荷无需读入即可判断声明区间是否越界 |
+
+公开 API（完整类型见 `pkg.generated.mbti`）：
+
+```moonbit
+// prefix 是完整文件的前缀，file_size 必须来自实际文件大小。
+inspect_avif_structure(prefix, file_size) // Result[AvifStructure, AvifDiagnostic]
+inspect_avif_file(path)                  // 异步，读取并调用同一核心
+```
+
+成功结果包含主图 ID、尺寸、声明 item 数和各数据区间的绝对偏移/长度/来源。失败返回首个诊断的 `code`、`box_type`、绝对字节 `offset`、可确定时的 `item_id` 和说明；`UNSUPPORTED_*`、`LIMIT_*` 表示超出本实现范围，不能据此断言文件违反规范。扫描入口 `scan_assets` 在 AVIF 项上使用此核心，并将诊断写入现有报告，例如 `AVIF[EXTENT_NOT_IN_MDAT] box=iloc offset=113 item=1`。旧 `avif_dimensions` 及 `init` 的尺寸草稿路径继续只提取尺寸，不提供结构验证保证。
+
+**支持范围与上限：** `avif` 主品牌或兼容品牌；`meta` v0、`pitm` v0/1、`iinf` v0/1、`infe` v2/3、`ipma` v0/1 的 7/15 位属性索引、`iloc` v0/1/2 的 0/4/8 字节字段。最多读取 4 MiB 前缀、访问 4096 个盒、声明 256 个 item、处理总计各 4096 项属性关联和数据区间；只遍历固定层级的已知容器。所有必需元数据和顶层盒头必须在前缀中，末尾 `mdat` 载荷可以超出前缀。超限会明确拒绝，不能当作“没发现错误”。文件入口检查读取前后文件大小，不能检测同大小并发改写；调用者应提供稳定文件。
+
+**不支持或未验证：** 仅有 `avis` 的图像序列、grid/其他派生主图、外部数据源、受保护 item、construction method 2、非零 extent index、隐含/零长度数据区间；AV1 OBU 和像素解码、配置与实际码流/尺寸的一致性、颜色/旋转/裁剪语义、完整 `hdlr`/`iref`/MIAF 规则和非主图属性语义。非主图可以没有 `iloc`，但若有条目就检查其引用和数据范围；未知元数据和属性载荷只检查盒边界，不保证其语义（包括 essential 属性）。因此结构检查通过不等于图像能够解码或视觉验收通过。上层内容探测当前的兼容品牌识别问题另待后续阶段修复，纯结构入口已按有效 `ftyp` 边界识别兼容 `avif`。
+
+**复现行为差别：** `moon test --target native` 运行版本库中的结构夹具回归，证明若只破坏 item 声明或数据偏移，旧尺寸接口仍返回 640×360，而结构入口明确失败。合成夹具仅含不透明数据，不宣称可以解码；`moon run --target native scripts/cli_smoke.mbtx` 则使用仓库真实 `examples/formats/assets/hero.avif`，以及每次只改一个字段的三种变异，断言正常文件退出 0、变异文件退出 1，且 JSON/HTML 含精确定位诊断。跨包 `examples/library_consumer` 也消费公开结构入口。
 
 ## 生态调研与复用取舍
 

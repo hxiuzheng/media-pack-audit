@@ -1113,10 +1113,19 @@ pub async fn scan_assets(
       None => ()
     }
     let dimensions = match parsed_image_format {
+      Some(Avif) =>
+        match inspect_avif_file(path) {
+          Ok(structure) => Some((structure.width, structure.height))
+          Err(diagnostic) => {
+            issues.push(avif_diagnostic_message(diagnostic))
+            None
+          }
+        }
       Some(format) => read_image_dimensions(format, path, size)
       None => None
     }
     match (parsed_image_format, dimensions) {
+      (Some(Avif), None) => ()
       (Some(format), None) => {
         let message = match (extension_format, content_format) {
           (Some(expected), Some(actual)) if expected != actual => ""

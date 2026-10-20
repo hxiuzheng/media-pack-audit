@@ -1,6 +1,23 @@
 ///|
 /// A separate package that consumes the public audit library API.
 async fn main {
+  // Consume the structural API across a package boundary as well as scan_assets.
+  match @audit.inspect_avif_file("examples/formats/assets/hero.avif") {
+    Ok(structure) =>
+      if structure.primary_item_id != 1L ||
+        structure.width != 640 ||
+        structure.height != 360 ||
+        structure.extents.length() != 1 ||
+        structure.extents[0].length != 83L {
+        raise Failure::Failure(
+          "AVIF structural library result differs from fixture",
+        )
+      }
+    Err(diagnostic) =>
+      raise Failure::Failure(
+        "AVIF library inspection failed: \{diagnostic.code}",
+      )
+  }
   let manifest_path = "examples/library_consumer/media-pack.json"
   let asset_dir = "examples/library_consumer/assets"
   let manifest_bytes = @fs.read_file(manifest_path)

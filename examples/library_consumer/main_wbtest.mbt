@@ -1,4 +1,32 @@
 ///|
+async test "public AVIF structure APIs reject a broken extent despite readable dimensions" {
+  let original = @fs.read_file("examples/formats/assets/hero.avif").binary()
+  match
+    @audit.inspect_avif_structure(original, Int32::to_int64(original.length())) {
+    Ok(result) => assert_eq(result.extents[0].offset, 275L)
+    Err(error) => fail(error.detail)
+  }
+  let data = original.to_array()
+  data[116] = b'\x00'
+  let broken = Bytes::from_array(data)
+  assert_true(@audit.avif_dimensions(broken) == Some((640, 360)))
+  match
+    @audit.inspect_avif_structure(broken, Int32::to_int64(broken.length())) {
+    Err(error) => {
+      assert_eq(error.code, "EXTENT_NOT_IN_MDAT")
+      assert_eq(error.offset, 113L)
+      assert_eq(error.item_id, Some(1L))
+      assert_eq(error.box_type, "iloc")
+    }
+    Ok(_) => fail("broken extent should fail across the public API")
+  }
+  assert_true(
+    @audit.inspect_avif_file("_build/absent-avif-structure-file.avif")
+    is Err({ code: "IO_ERROR", .. }),
+  )
+}
+
+///|
 /// Controlled fixtures exercise the public API without JSON decoding first.
 async test "direct library specs reject invalid constraints in both reports" {
   let asset_dir = "_build/library-spec-invalid"

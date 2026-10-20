@@ -122,6 +122,61 @@ async fn main {
     )
   }
 
+  // Patch exactly one field of the real AVIF while keeping ispe, ipma, file
+  // size and manifest expectations unchanged. Each case gets a fresh directory.
+  let avif_original = @fs.read_file("examples/formats/assets/hero.avif").binary()
+  for
+    (name, offset, value, code, diagnostic_offset, item) in [
+      ("valid", 0, avif_original[0], "", 0, 0),
+      ("undeclared-primary", 148, b'\x02', "UNDECLARED_PRIMARY", 89, 1),
+      ("extent-outside-mdat", 116, b'\x00', "EXTENT_NOT_IN_MDAT", 113, 1),
+      ("property-out-of-range", 263, b'\x7F', "PROPERTY_INDEX", 263, 1),
+    ] {
+    let dir = "_build/cli-smoke/avif-structure-" + name
+    if !@fs.exists("\{dir}/assets") {
+      @fs.mkdir("\{dir}/assets", recursive=true)
+    }
+    let data = avif_original.to_array()
+    data[offset] = value
+    @fs.write_file("\{dir}/assets/hero.avif", Bytes::from_array(data))
+    @fs.write_file(
+      "\{dir}/media-pack.json",
+      "{\"assets\":[{\"file\":\"hero.avif\",\"format\":\"avif\",\"width\":640,\"height\":360,\"max_bytes\":1000}]}",
+    )
+    let command = @shell.Cmd("moon", [
+      "run",
+      "--target",
+      "native",
+      "cmd/main",
+      "--",
+      "\{dir}/media-pack.json",
+      "\{dir}/assets",
+      "--output",
+      "\{dir}/report",
+    ]).output()
+    let json = @fs.read_file("\{dir}/report/report.json").text()
+    let html = @fs.read_file("\{dir}/report/report.html").text()
+    if code == "" {
+      if command.exit_code() != 0 || !json.contains("640 × 360") {
+        raise Failure::Failure(
+          "unmodified real AVIF should pass structural scan",
+        )
+      }
+    } else {
+      let marker = "AVIF[\{code}]"
+      let location = "offset=\{diagnostic_offset} item=\{item}"
+      if command.exit_code() != 1 ||
+        !json.contains(marker) ||
+        !html.contains(marker) ||
+        !json.contains(location) ||
+        !html.contains(location) {
+        raise Failure::Failure(
+          "\{name} should fail with located AVIF diagnostic\n\{json}",
+        )
+      }
+    }
+  }
+
   let init_output = "_build/cli-smoke/init-manifest.json"
   if @fs.exists(init_output) {
     @fs.remove(init_output)
@@ -793,7 +848,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), AVIF structure valid=0 and undeclared item/extent/property=1 with located JSON+HTML diagnostics, init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 
