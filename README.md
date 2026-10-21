@@ -1,8 +1,10 @@
 # 片盒点检 · MediaPack Audit
 
-**清单驱动的通用文件包校验库，提供可选的图像元数据校验。** 调用者用 JSON 清单声明文件和约束，库检查清单项是否存在、路径是否安全、文件大小/摘要是否符合要求，并报告包内未登记文件。对 PNG/JPEG/WebP/GIF/BMP/TIFF/SVG/AVIF/JP2/ICO/PSD，还可按需校验格式、尺寸和宽高比。公开 API 可由 MoonBit 应用调用，命令行入口（CLI）是供人工操作或 CI 调用的薄消费端；输入清单和目录，输出结构化结果及 HTML/JSON 报告。
+**片盒点检的核心任务是验收一整个交付文件包是否符合外部清单。** 调用者提供 JSON 规格清单和素材目录；库逐项核对必需文件、路径安全、内容格式、尺寸/宽高比、单文件大小与摘要、整包容量，并报告未登记文件。普通附件也可参加文件级验收，不必是图片。公开 MoonBit API 和 CLI 使用同一套扫描与报告逻辑，输出可供程序处理的结果及 HTML/JSON 报告。图像读取是这个包验收流程的可选部分，不是项目的总目标。
 
 > 项目边界：它是清单驱动的资源包验收组件，不是图像编辑器或像素解码器。通用文件检查不依赖图像格式；图像尺寸等规则是可选的领域扩展。
+
+与 Pillow 的职责和重叠范围见[功能对照与选型说明](docs/pillow-comparison.md)：两者都能处理图像格式/尺寸相关需求，但 Pillow 面向图像解码、处理和编码；片盒点检面向按外部规则验收整包。若需求是改像素或转码，使用 Pillow 等图像处理工具；若需求是判断一批交付文件是否齐全且符合约束，使用片盒点检；两者可以串接。
 
 ## 十月新生态项目建设与已有原型
 
@@ -111,7 +113,7 @@ inspect_avif_file(path)                  // 异步，读取并调用同一核心
 
 | 项目/组件 | 已有能力 | 与片盒点检的关系与取舍 |
 |---|---|---|
-| [Pillow](https://pillow.readthedocs.io/en/stable/handbook/tutorial.html) | `Image.open()` 识别图像并提供尺寸、格式等属性；完整产品也支持像素解码和编辑 | 借鉴“先读格式与元数据”的使用流程；不移植 Python 实现，也不引入完整像素解码，因为本项目只做交付规格预检 |
+| [Pillow](https://pillow.readthedocs.io/en/stable/handbook/tutorial.html) | 图像打开、解码、像素处理、转换与保存；支持格式和插件依安装构建环境而异 | 与本项目只在部分图片格式/尺寸信息上重叠。项目核心是外部清单驱动的整包验收；不移植 Pillow，也不把 Pillow 的解码、编辑和编码能力算作本项目能力。详见[逐项对照](docs/pillow-comparison.md) |
 | [mizchi/image](https://mooncakes.io/docs/mizchi/image) | PNG/BMP/JPEG 解码与编码，以及部分格式编码、缩放；解码结果为 RGBA 像素数据 | 面向编解码和图像处理。使用它获取尺寸会进入解码路径；本项目读取交付所需的容器元数据，并为格式差异做受限解析 |
 | [gmlewis/moonbit-image](https://github.com/gmlewis/moonbit-image) | 基于 Go `image` 的简单 MoonBit 图像表示 | 面向图像数据表示；没有本项目需要的素材清单、目录验收与报告流程 |
 | [hanbings/fluorescence](https://github.com/hanbings/fluorescence) | 仓库说明了 MoonBit BMP/PNG 读取及图像模糊、取色等能力 | 覆盖部分格式与图像处理，不包含本项目的素材包验收流程；不将其描述为没有图像读取能力 |

@@ -30,7 +30,7 @@ keywords = [
 
 preferred_target = "native"
 
-description = "A reusable MoonBit library for manifest-driven file package validation: paths, presence, size budgets, SHA-256, and optional image metadata checks, with JSON/HTML reports."
+description = "A MoonBit library for validating complete file packages against JSON manifests, with optional image metadata checks and machine-readable reports."
 
 import {
   "moonbitlang/async@0.22.1",
