@@ -68,9 +68,12 @@ moon run --target native scripts/cli_smoke.mbtx
 | [AOM AVIF 规范](https://aomediacodec.github.io/av1-avif/) | 核对 AVIF 品牌、主图属性和文件结构字段；规范是实现依据，不是运行依赖 | 本仓库实现的是上文列明的子集 |
 | [AOMediaCodec/libavif](https://github.com/AOMediaCodec/libavif) | 只作为公开实现参考，用于交叉核对字段宽度和边界行为；未链接、未调用、未复制其解码器 | 上游仓库声明 BSD-2-Clause；不将其代码并入本项目 |
 | [Pillow](https://github.com/python-pillow/Pillow) | 图像功能对照及部分仓库样例生成工具，不是运行依赖；没有把其解码器或代码纳入本项目 | 当前上游声明 MIT-CMU；其能力不计作本项目实现 |
+| [MoonBit Notary](https://mooncakes.io/docs/hcjbat/moonbit-notary) | Mooncakes 当前列出 v0.1.0、Apache-2.0；公开说明覆盖电子证据清单、目录扫描/分类、路径与摘要规则、重复材料、批处理、审计记录和报告 | 与本项目的清单驱动文件包检查存在真实重叠，不能把清单、摘要、重复提示或报告当作独立性的依据 |
 | [`moonbitlang/async@0.22.1`](https://github.com/moonbitlang/async) | 异步文件 I/O 基础 | Apache-2.0；按锁定依赖版本复用 |
 | [`moonbitlang/x@0.5.5`](https://github.com/moonbitlang/x) | SHA-256 通用算法 | Apache-2.0；按锁定依赖版本复用 |
 | [`gmlewis/crc32@0.8.18`](https://github.com/gmlewis/moonbit-crc32) | PNG CRC-32 通用算法 | Apache-2.0；按锁定依赖版本复用 |
+
+MoonBit Notary 是最接近文件包工作流的对照对象之一：其公开说明包含清单、目录扫描、路径/摘要/重复项校验，以及证据审计和报告。本仓库同样提供清单驱动检查，因此这一层有重叠。可以从当前源码和回归直接说明的不同点是：片盒点检面向交付素材规格及整包预算，并自行解析 AVIF 的 `pitm → iinf/infe → ipma/ipco → iloc → mdat/idat` 关系；MoonBit Notary 的公开文档未列出这类 AVIF 内部结构检查。文档未列出不等于源码确定不支持，故不作此类排他结论，也不声称仓库由此自动满足独立立项要求。正式申报仍须由参赛者说明具体目标用户、为什么选择独立实现而非复用相邻项目，并把 AVIF 子范围与整个文件包工具的关系写清楚。
 
 本仓库也对照了 [mizchi/image](https://mooncakes.io/docs/mizchi/image)、[gmlewis/moonbit-image](https://github.com/gmlewis/moonbit-image) 和 [hanbings/fluorescence](https://github.com/hanbings/fluorescence) 的公开项目说明。它们涉及图像解码/编码、图像表示或 BMP/PNG 读取和处理；这里不据简介断言其完整功能，也不据此声称不存在 AVIF/元数据方向的重叠。正式申报仍须由参赛者核实相近的 MoonBit 项目并解释独立建设理由。
 

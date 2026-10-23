@@ -119,9 +119,10 @@ inspect_avif_file(path)                  // 异步，读取并调用同一核心
 | [mizchi/image](https://mooncakes.io/docs/mizchi/image) | PNG/BMP/JPEG 解码与编码，以及部分格式编码、缩放；解码结果为 RGBA 像素数据 | 面向编解码和图像处理。使用它获取尺寸会进入解码路径；本项目读取交付所需的容器元数据，并为格式差异做受限解析 |
 | [gmlewis/moonbit-image](https://github.com/gmlewis/moonbit-image) | 基于 Go `image` 的简单 MoonBit 图像表示 | 面向图像数据表示；没有本项目需要的素材清单、目录验收与报告流程 |
 | [hanbings/fluorescence](https://github.com/hanbings/fluorescence) | 仓库说明了 MoonBit BMP/PNG 读取及图像模糊、取色等能力 | 覆盖部分格式与图像处理，不包含本项目的素材包验收流程；不将其描述为没有图像读取能力 |
+| [MoonBit Notary](https://mooncakes.io/docs/hcjbat/moonbit-notary) | 公开的 v0.1.0 说明包含电子证据清单、目录扫描与分类、路径/摘要/重复项规则、批处理、审计记录和报告 | 与清单驱动目录校验、摘要及报告存在直接重叠；其公开说明偏电子证据交接与审计。本项目的差异证据及限制见[核心范围对照](docs/core-scope.md)，不据其公开说明推断未列出的能力一定不存在 |
 | [gmlewis/crc32](https://mooncakes.io/docs/gmlewis/crc32) / [moonbitlang/x/crypto](https://github.com/moonbitlang/x/tree/main/crypto) | CRC-32 与 SHA-256 通用算法 | 项目直接依赖前者验证 PNG CRC，依赖后者计算内容指纹，不重复实现哈希算法 |
 
-片盒点检的复用单位是规格清单、目录对照与可归档报告，图像元数据检查是其中的可选能力。表中调研对象不代表合作方或采用方；本仓库没有提供 posterkit 或 MoonBitMark 的接入验证，不将它们列为已验证的消费端。
+片盒点检的复用单位是规格清单、目录对照与可归档报告，图像元数据检查是其中的可选能力。MoonBit Notary 是相邻的清单与证据包项目，因此项目独立性不能只靠清单、摘要、重复项或报告来说明；本仓库能直接验证的新增语义实现是有界 AVIF 主图关系检查。相近项目是否足以覆盖本项目场景、为何单独建设，仍须参赛者在正式申报材料中本人说明。表中调研对象不代表合作方或采用方；本仓库没有提供 posterkit 或 MoonBitMark 的接入验证，不将它们列为已验证的消费端。
 
 ## 快速开始
 

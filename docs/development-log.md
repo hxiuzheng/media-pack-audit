@@ -2,6 +2,14 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-10-24 02:22 阶段：补充相邻 MoonBit 文件包项目对照
+
+- 复核起点为 `9238c3eb171941f72f39b6224bcc76b00ea0ee8f`，`main` 与 `origin/main` 一致且工作区干净；该 SHA 的 Ubuntu/Windows CI 已通过。重新按 Mooncakes 当前条目及其公开 README 核对 [MoonBit Notary](https://mooncakes.io/docs/hcjbat/moonbit-notary)：页面列出 v0.1.0、Apache-2.0，文档描述电子证据清单、目录扫描/分类、路径与摘要规则、重复材料、批处理、审计记录和报告。
+- README 与 `docs/core-scope.md` 现明确记录两项目在清单驱动扫描、路径/摘要/重复项处理和报告方面的重叠；对照项目的公开文档未列出 AVIF 内部关系检查，但没有据此推断其源码缺少此功能。MediaPack Audit 可由仓库源码和回归核验的不同点是交付素材规格/整包预算及 `pitm → iinf/infe → ipma/ipco → iloc → mdat/idat` 的有界 AVIF 关系解析。该差异不能单独证明独立项目立项理由。
+- 申报书、申报表均按用户要求保持不变。第三次驳回指出正式申报材料未说明扣除可复用能力后的核心工作及 AVIF 与申报范围的关系，因此仓库文档改动没有消除该材料缺口；需参赛者本人处理后才可评估是否重提。
+- 本地验证使用 WSL Linux 下 Moon `0.1.20261012` / moonc `0.10.15`：`moon info`、`moon fmt`、项目和 `.mbtx` 格式检查、`moon check --target native --deny-warn` 通过；原生测试 **81/81**、独立库消费示例 **1/1**、AVIF 核心示例 **9 项**、完整 CLI smoke 均通过。Windows 本机缺少 MSVC 与 Windows SDK，未能在本机运行 Windows 原生测试；本阶段提交后的双平台 CI 仍待核验。Windows Git 的 `git diff --check` 通过。
+- 10:11 阶段应核对本次推送的确切 SHA 及 Ubuntu/Windows CI，并再次确认正式申报书仍未覆盖第三次驳回的两项说明；不把仓库增强当成已代替本人更新申报材料。
+
 ## 2026-10-23：回应第三次初审意见，明确申报核心映射并补齐 essential 语义
 
 - 本次驳回指出的具体问题是：既有仓库说明重点仍放在清单驱动预检、API 与 CI；申报书没有说明扣除通用能力后哪些自有语义处理支撑项目核心，也没有把新增 AVIF 结构校验对应到本次申报范围。README 与 Pillow 对照因此改为区分产品用途、申报核心和通用集成层，明确清单比较、依赖、扫描和报告不作为净核心深度证明。
