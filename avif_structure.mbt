@@ -27,6 +27,22 @@ pub(all) struct AvifExtent {
 pub extend AvifExtent with Debug::{to_repr}
 
 ///|
+/// One primary-item binding, in ipma association order. index is the original
+/// one-based ipco index; offset locates the property's box header in the file.
+/// interpreted means only the documented ispe/av1C/pixi field subset was checked,
+/// not that the complete property semantics or AV1 payload were validated.
+pub(all) struct AvifPropertyAssociation {
+  index : Int32
+  box_type : String
+  offset : Int64
+  essential : Bool
+  interpreted : Bool
+} derive(Debug)
+
+///|
+pub extend AvifPropertyAssociation with Debug::{to_repr}
+
+///|
 /// Successful validation of the documented structural subset, not AV1 decoding
 /// or full AVIF conformance. Dimensions are the primary item's stored ispe.
 pub(all) struct AvifStructure {
@@ -34,6 +50,7 @@ pub(all) struct AvifStructure {
   width : Int32
   height : Int32
   item_count : Int32
+  primary_properties : Array[AvifPropertyAssociation]
   extents : Array[AvifExtent]
 } derive(Debug)
 
@@ -58,6 +75,13 @@ priv struct AvifBudget {
   mut boxes : Int32
   mut associations : Int32
   mut extents : Int32
+}
+
+///|
+priv struct AvifBinding {
+  index : Int32
+  offset : Int64
+  essential : Bool
 }
 
 ///|
@@ -183,7 +207,11 @@ fn avif_node_kind(bytes : Bytes, offset : Int32) -> String {
       return name
     }
   }
-  "other"
+  let name = StringBuilder()
+  for i in 0..<4 {
+    name.write_char(bytes[offset + i].to_char())
+  }
+  name.to_string()
 }
 
 ///|
@@ -472,8 +500,8 @@ fn avif_associations(
   properties : Array[AvifNode],
   items : Map[Int64, String],
   budget : AvifBudget,
-) -> Map[Int64, Array[Int32]] raise AvifStructureFailure {
-  let associations : Map[Int64, Array[Int32]] = Map([])
+) -> Map[Int64, Array[AvifBinding]] raise AvifStructureFailure {
+  let associations : Map[Int64, Array[AvifBinding]] = Map([])
   let variants : Map[Int32, Bool] = Map([])
   for node in nodes {
     if node.kind == "free" || node.kind == "skip" {
@@ -550,12 +578,24 @@ fn avif_associations(
         "属性关联总数超过 4096",
       )
       budget.associations += property_count
-      let indexes : Array[Int32] = []
+      let bindings : Array[AvifBinding] = []
       for _ in 0..<property_count {
         let property_offset = Int32::to_int64(cursor.position)
         let raw = cursor.uint(if flags == 0L { 1 } else { 2 })
         let index = Int64::to_int(
           raw & (if flags == 0L { 0x7FL } else { 0x7FFFL }),
+        )
+        let essential = (raw & (if flags == 0L { 0x80L } else { 0x8000L })) !=
+          0L
+        // ISO/IEC 14496-12 8.11.14.3: a zero property index denotes no
+        // association, so its essential bit must also be zero.
+        avif_need(
+          index != 0 || !essential,
+          "PROPERTY_ESSENTIAL_ZERO",
+          "ipma",
+          property_offset,
+          Some(id),
+          "property_index 为零时 essential 必须为零",
         )
         avif_need(
           index <= properties.length(),
@@ -566,10 +606,10 @@ fn avif_associations(
           "属性索引越过 ipco 属性列表",
         )
         if index > 0 {
-          indexes.push(index - 1)
+          bindings.push({ index, offset: property_offset, essential, })
         }
       }
-      associations.set(id, indexes)
+      associations.set(id, bindings)
     }
     cursor.finish()
   }
@@ -797,13 +837,33 @@ fn avif_locations(
 fn avif_primary_properties(
   bytes : Bytes,
   properties : Array[AvifNode],
-  indexes : Array[Int32],
+  bindings : Array[AvifBinding],
   primary : Int64,
   parent : AvifNode,
-) -> (Int32, Int32) raise AvifStructureFailure {
+) -> (Int32, Int32, Array[AvifPropertyAssociation]) raise AvifStructureFailure {
   let selected : Array[AvifNode] = []
-  for index in indexes {
-    selected.push(properties[index])
+  let evidence : Array[AvifPropertyAssociation] = []
+  for binding in bindings {
+    let property = properties[binding.index - 1]
+    let interpreted = property.kind == "ispe" ||
+      property.kind == "av1C" ||
+      property.kind == "pixi"
+    avif_need(
+      !binding.essential || interpreted,
+      "UNSUPPORTED_ESSENTIAL_PROPERTY",
+      "ipma",
+      binding.offset,
+      Some(primary),
+      "主图属性 \{property.kind} 标记为 essential，但不在已解释的属性子集内",
+    )
+    selected.push(property)
+    evidence.push({
+      index: binding.index,
+      box_type: property.kind,
+      offset: property.header,
+      essential: binding.essential,
+      interpreted,
+    })
   }
   let ispe = avif_required_node(selected, "ispe", parent)
   let config = avif_required_node(selected, "av1C", parent)
@@ -890,7 +950,7 @@ fn avif_primary_properties(
     }
     None => ()
   }
-  (Int64::to_int(width), Int64::to_int(height))
+  (Int64::to_int(width), Int64::to_int(height), evidence)
 }
 
 ///|
@@ -1036,7 +1096,7 @@ fn avif_inspect(
         "主图没有属性关联条目",
       )
   }
-  let (width, height) = avif_primary_properties(
+  let (width, height, primary_properties) = avif_primary_properties(
     prefix, properties, selected, primary, ipco,
   )
   let media : Array[AvifNode] = []
@@ -1060,6 +1120,7 @@ fn avif_inspect(
     width,
     height,
     item_count: items.length(),
+    primary_properties,
     extents,
   }
 }

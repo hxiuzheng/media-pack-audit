@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "hxiuzheng/media-pack-audit/examples/avif_semantics"
+
+// Values
+
+// Errors
+
+// Types and methods
+type BindingEvidence derive(ToJson)
+
+type CaseEvidence derive(ToJson)
+
+type CoreEvidence derive(ToJson)
+
+type DiagnosticEvidence derive(ToJson)
+
+type ExtentEvidence derive(ToJson)
+
+type StructureEvidence derive(ToJson)
+
+// Type aliases
+
+// Traits

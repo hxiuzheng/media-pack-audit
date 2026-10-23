@@ -163,6 +163,16 @@ fn avif_test_patch(
 }
 
 ///|
+fn avif_test_header_offset(bytes : Bytes, tag : Bytes) -> Int64 {
+  for i in 4..<(bytes.length() - 3) {
+    if box_type_is(bytes, i, tag) {
+      return Int32::to_int64(i - 4)
+    }
+  }
+  abort("fixture tag missing")
+}
+
+///|
 fn avif_test_error(
   bytes : Bytes,
   expected : String,
@@ -492,4 +502,182 @@ test "AVIF size-zero boxes are permitted only at the file top level" {
     inspect_avif_structure(top_level, Int32::to_int64(top_level.length()))
     is Ok(_),
   )
+}
+
+///|
+test "AVIF primary property evidence preserves narrow and wide association semantics" {
+  for wide in [false, true] {
+    let bytes = avif_test_file(wide~)
+    match inspect_avif_structure(bytes, Int32::to_int64(bytes.length())) {
+      Ok(result) => {
+        let bindings = result.primary_properties
+        assert_eq(bindings.length(), 3)
+        for (i, kind) in [(0, "ispe"), (1, "av1C"), (2, "pixi")] {
+          assert_eq(bindings[i].index, i + 1)
+          assert_eq(bindings[i].box_type, kind)
+          assert_true(bindings[i].interpreted)
+          assert_eq(bindings[i].essential, i == 1)
+        }
+        assert_eq(bindings[0].offset, avif_test_header_offset(bytes, b"ispe"))
+        assert_eq(bindings[1].offset, avif_test_header_offset(bytes, b"av1C"))
+        assert_eq(bindings[2].offset, avif_test_header_offset(bytes, b"pixi"))
+      }
+      Err(error) => fail(error.detail)
+    }
+    // AVIF recommends, rather than requires, av1C's essential bit. Its
+    // supported field checks must still work when this recommendation is absent.
+    let optional_codec = avif_test_patch(
+      bytes,
+      b"ipma",
+      if wide {
+        15
+      } else {
+        12
+      },
+      if wide {
+        b"\x00\x02"
+      } else {
+        b"\x02"
+      },
+    )
+    assert_true(
+      inspect_avif_structure(
+        optional_codec,
+        Int32::to_int64(optional_codec.length()),
+      )
+      is Ok(_),
+    )
+  }
+}
+
+///|
+test "AVIF cannot accept a primary essential property whose semantics are not handled" {
+  for wide in [false, true] {
+    let original = avif_test_file(wide~)
+    let relative = if wide { 17 } else { 13 }
+    for (tag, kind) in [(b"zzzz", "zzzz"), (b"colr", "colr")] {
+      let optional = avif_test_patch(original, b"pixi", -4, tag)
+      assert_true(avif_dimensions(optional) == Some((640, 360)))
+      match
+        inspect_avif_structure(optional, Int32::to_int64(optional.length())) {
+        Ok(result) => {
+          let binding = result.primary_properties[2]
+          assert_eq(binding.index, 3)
+          assert_eq(binding.box_type, kind)
+          assert_eq(binding.offset, avif_test_header_offset(optional, tag))
+          assert_true(!binding.essential)
+          assert_true(!binding.interpreted)
+        }
+        Err(error) => fail(error.detail)
+      }
+      let required = avif_test_patch(
+        optional,
+        b"ipma",
+        relative,
+        if wide {
+          b"\x80\x03"
+        } else {
+          b"\x83"
+        },
+      )
+      assert_true(avif_dimensions(required) == Some((640, 360)))
+      match
+        inspect_avif_structure(required, Int32::to_int64(required.length())) {
+        Err(error) => {
+          assert_eq(error.code, "UNSUPPORTED_ESSENTIAL_PROPERTY")
+          assert_eq(error.box_type, "ipma")
+          assert_eq(error.item_id, Some(1L))
+          assert_eq(
+            error.offset,
+            avif_test_header_offset(required, b"ipma") +
+            8L +
+            Int32::to_int64(relative),
+          )
+          assert_true(error.detail.contains(kind))
+        }
+        Ok(_) =>
+          fail("unknown essential semantics must not receive subset success")
+      }
+    }
+  }
+}
+
+///|
+test "AVIF property index zero is a no-op only when essential is clear" {
+  for wide in [false, true] {
+    let original = avif_test_file(wide~)
+    let relative = if wide { 17 } else { 13 }
+    let empty = avif_test_patch(
+      original,
+      b"ipma",
+      relative,
+      if wide {
+        b"\x00\x00"
+      } else {
+        b"\x00"
+      },
+    )
+    match inspect_avif_structure(empty, Int32::to_int64(empty.length())) {
+      Ok(result) => assert_eq(result.primary_properties.length(), 2)
+      Err(error) => fail(error.detail)
+    }
+    let essential = avif_test_patch(
+      original,
+      b"ipma",
+      relative,
+      if wide {
+        b"\x80\x00"
+      } else {
+        b"\x80"
+      },
+    )
+    assert_true(avif_dimensions(essential) == Some((640, 360)))
+    match
+      inspect_avif_structure(essential, Int32::to_int64(essential.length())) {
+      Err(error) => {
+        assert_eq(error.code, "PROPERTY_ESSENTIAL_ZERO")
+        assert_eq(error.box_type, "ipma")
+        assert_eq(error.item_id, Some(1L))
+        assert_eq(
+          error.offset,
+          avif_test_header_offset(essential, b"ipma") +
+          8L +
+          Int32::to_int64(relative),
+        )
+      }
+      Ok(_) => fail("a nonexistent property cannot be essential")
+    }
+    let secondary = avif_test_file(
+      secondary=true,
+      wide~,
+      secondary_property=if wide { 0x8000L } else { 0x80L },
+    )
+    avif_test_error(secondary, "PROPERTY_ESSENTIAL_ZERO", Some(2L))
+  }
+}
+
+///|
+async test "real AVIF fixture exposes checked and opaque primary property bindings" {
+  let bytes = @fs.read_file("examples/formats/assets/hero.avif").binary()
+  match inspect_avif_structure(bytes, Int32::to_int64(bytes.length())) {
+    Ok(result) => {
+      assert_eq(result.primary_item_id, 1L)
+      assert_eq(result.primary_properties.length(), 4)
+      for
+        (i, kind, offset, essential, interpreted) in [
+          (0, "ispe", 177L, false, true),
+          (1, "pixi", 197L, false, true),
+          (2, "av1C", 213L, true, true),
+          (3, "colr", 225L, false, false),
+        ] {
+        let binding = result.primary_properties[i]
+        assert_eq(binding.index, i + 1)
+        assert_eq(binding.box_type, kind)
+        assert_eq(binding.offset, offset)
+        assert_eq(binding.essential, essential)
+        assert_eq(binding.interpreted, interpreted)
+      }
+    }
+    Err(error) => fail(error.detail)
+  }
 }

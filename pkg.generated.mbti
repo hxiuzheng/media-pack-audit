@@ -108,11 +108,21 @@ pub(all) struct AvifExtent {
 } derive(@debug.Debug)
 pub fn AvifExtent::to_repr(Self) -> @debug.Repr
 
+pub(all) struct AvifPropertyAssociation {
+  index : Int32
+  box_type : String
+  offset : Int64
+  essential : Bool
+  interpreted : Bool
+} derive(@debug.Debug)
+pub fn AvifPropertyAssociation::to_repr(Self) -> @debug.Repr
+
 pub(all) struct AvifStructure {
   primary_item_id : Int64
   width : Int32
   height : Int32
   item_count : Int32
+  primary_properties : Array[AvifPropertyAssociation]
   extents : Array[AvifExtent]
 } derive(@debug.Debug)
 pub fn AvifStructure::to_repr(Self) -> @debug.Repr

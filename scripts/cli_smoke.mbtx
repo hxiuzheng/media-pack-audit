@@ -8,6 +8,33 @@ import {
 
 ///|
 async fn main {
+  let mut previous_core_evidence = ""
+  for attempt in 0..<2 {
+    let core = @shell.Cmd("moon", [
+      "run", "--target", "native", "examples/avif_semantics",
+    ]).output()
+    if core.exit_code() != 0 {
+      raise Failure::Failure(
+        "AVIF semantic consumer run \{attempt + 1} should return 0\n\{core.stderr()}",
+      )
+    }
+    let evidence = @fs.read_file("_build/avif-semantics/evidence.json").text()
+    if !evidence.contains("\"case_count\": 9") ||
+      !evidence.contains("\"primary_properties\"") ||
+      !evidence.contains("\"interpreted\": false") ||
+      !evidence.contains("UNDECLARED_PRIMARY") ||
+      !evidence.contains("EXTENT_NOT_IN_MDAT") ||
+      !evidence.contains("PIXI_DEPTH") ||
+      !evidence.contains("PROPERTY_ESSENTIAL_ZERO") ||
+      !evidence.contains("UNSUPPORTED_ESSENTIAL_PROPERTY") ||
+      !evidence.contains("\"outcome\": \"incomplete\"") ||
+      (attempt > 0 && evidence != previous_core_evidence) {
+      raise Failure::Failure(
+        "core-only consumer must expose deterministic relationship and limit evidence",
+      )
+    }
+    previous_core_evidence = evidence
+  }
   let mut previous_consumer_report = ""
   for attempt in 0..<2 {
     let consumer = @shell.Cmd("moon", [
@@ -143,6 +170,11 @@ async fn main {
       ("undeclared-primary", 148, b'\x02', "UNDECLARED_PRIMARY", 89, 1),
       ("extent-outside-mdat", 116, b'\x00', "EXTENT_NOT_IN_MDAT", 113, 1),
       ("property-out-of-range", 263, b'\x7F', "PROPERTY_INDEX", 263, 1),
+      ("essential-zero-index", 263, b'\x80', "PROPERTY_ESSENTIAL_ZERO", 263, 1),
+      (
+        "unimplemented-essential", 266, b'\x84', "UNSUPPORTED_ESSENTIAL_PROPERTY",
+        266, 1,
+      ),
     ] {
     let dir = "_build/cli-smoke/avif-structure-" + name
     if !@fs.exists("\{dir}/assets") {
@@ -903,7 +935,7 @@ async fn main {
   }
 
   println(
-    "CLI smoke passed: clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), AVIF structure valid/compatible-brand=0 and sequence-only/box-header boundaries/undeclared item/extent/property=1 with located JSON+HTML diagnostics, init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
+    "CLI smoke passed: core-only AVIF evidence=9 deterministic cases; clean=0 with package budget and expected SHA-256, formats=0 (SVG/AVIF/JP2/ICO/PSD), AVIF structure valid/compatible-brand=0 and sequence-only/box-header boundaries/undeclared item/extent/property/essential-bit=1 with located JSON+HTML diagnostics, init scaffold + round-trip + overwrite guard, min_bytes/format assertion/content mismatch, expected digest mismatch/skip=1, invalid digest formats=1, over-budget package=1, JPEG EXIF orientation, duplicate-content info=0, manifest schema errors=1, invalid/corrupt PNG boundaries=1, malformed WebP=1, findings=1, case mismatch=1, invalid/missing/traversal/wrong-kind input=1, output path conflict=1",
   )
 }
 

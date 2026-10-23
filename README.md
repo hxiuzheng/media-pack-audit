@@ -1,8 +1,10 @@
 # 片盒点检 · MediaPack Audit
 
-**片盒点检的核心任务是验收一整个交付文件包是否符合外部清单。** 调用者提供 JSON 规格清单和素材目录；库逐项核对必需文件、路径安全、内容格式、尺寸/宽高比、单文件大小与摘要、整包容量，并报告未登记文件。普通附件也可参加文件级验收，不必是图片。公开 MoonBit API 和 CLI 使用同一套扫描与报告逻辑，输出可供程序处理的结果及 HTML/JSON 报告。图像读取是这个包验收流程的可选部分，不是项目的总目标。
+片盒点检面向清单驱动的交付文件包预检：调用者提供 JSON 规格和素材目录，程序核对文件、路径、内容格式、可选尺寸/比例、大小、摘要及整包容量，并输出可复查的结果。普通附件也可参加文件级验收。
 
-> 项目边界：它是清单驱动的资源包验收组件，不是图像编辑器或像素解码器。通用文件检查不依赖图像格式；图像尺寸等规则是可选的领域扩展。
+**本轮整改中可由源码和演示核验的自有技术核心**是 MoonBit 实现的有界 AVIF 元数据关系校验：从文件内部建立主图、item 声明、属性关联和图像数据区间的关系，并在限定子集内验证一致性。通用清单比较、目录遍历、哈希依赖、报告和 CLI 是产品集成层；不计作这项核心深度的证明。完整仓库范围、扣除项、反例、资源上限和未支持功能见[仓库范围与申报核心对应事实](docs/core-scope.md)。是否把这项核心明确纳入正式申报仍须由参赛者本人在报名材料中说明；仓库文档不能代替章程要求由本人撰写的申报书。
+
+项目交付形态仍是整个文件包预检器，AVIF 是其中一个有界语义适配器；本项目不实现 Pillow 的图像解码、编辑或编码功能，也不声称 AVIF 子集足以覆盖所有媒体格式。与 Pillow 的重叠和边界见[功能对照与选型说明](docs/pillow-comparison.md)。
 
 与 Pillow 的职责和重叠范围见[功能对照与选型说明](docs/pillow-comparison.md)：两者都能处理图像格式/尺寸相关需求，但 Pillow 面向图像解码、处理和编码；片盒点检面向按外部规则验收整包。若需求是改像素或转码，使用 Pillow 等图像处理工具；若需求是判断一批交付文件是否齐全且符合约束，使用片盒点检；两者可以串接。
 
@@ -16,7 +18,7 @@
 | 通用目录清单生成及转义修复 | `init` 纳入普通文件；生成含控制字符路径时使用合法 JSON 转义，保留图片尺寸的可选生成 | [`4daa2f7`](https://github.com/hxiuzheng/media-pack-audit/commit/4daa2f7) 至 [`25f16e4`](https://github.com/hxiuzheng/media-pack-audit/commit/25f16e4)；`manifest.mbt` 单测与 CLI 草稿回读、拒绝覆盖场景 |
 | 直接库调用的约束校验 | 修复直接构造规格时非法约束可能被忽略的问题；与 JSON 入口共用规则并拒绝矛盾大小区间 | [`163a9d3`](https://github.com/hxiuzheng/media-pack-audit/commit/163a9d3)；独立消费包的 3 项测试及 CLI 无效清单回归 |
 | AVIF 主图元数据关联解析 | 不再把 `ipco` 中第一个 `ispe` 当作主图尺寸；解析 `pitm` 主 item 与 `ipma` 属性索引，再按索引解析 `ipco`，区分主图和缩略图并拒绝缺失、越界或含糊关联 | `avif.mbt` 的多 item 回归：缩略图先出现时仍选主图；未关联的 `ispe` 被拒绝；扩展属性结构边界检查 |
-| AVIF 有界结构一致性核心 | 串联 `pitm → iinf/infe → ipma/ipco → iloc → mdat/idat`，验证 item 引用、属性索引、主图尺寸/配置/位深关系及数据区间归属；公开纯函数和文件入口返回可定位诊断 | `avif_structure.mbt`、`avif_structure_file.mbt`；`avif_structure_wbtest.mbt` 的单约束破坏对照与边界回归；CLI smoke 的真实 AVIF 变异样例与跨包消费 |
+| AVIF 有界结构一致性核心 | 串联 `pitm → iinf/infe → ipma/ipco → iloc → mdat/idat`；检验 item 引用、主图属性绑定、受支持的尺寸/配置/位深关系及显式数据区间归属；未实现的主图 essential 属性明确返回 unsupported | [`avif_structure.mbt`](avif_structure.mbt)、[`avif_structure_wbtest.mbt`](avif_structure_wbtest.mbt)、[`examples/avif_semantics`](examples/avif_semantics) 的 9 项单约束证据和 `scripts/cli_smoke.mbtx` 的包级端到端回归 |
 
 十月还适配了 MoonBit `0.1.20261012` 的类型与接口写法；这属于工具链维护。直接构造 `AssetSpec` 的旧调用者须把必填的 `width`/`height` 改为 `Some(宽)`/`Some(高)`，或同时使用 `None`；旧 JSON 清单中成对的整数尺寸仍可使用。当前公开字段及函数签名见 `pkg.generated.mbti`。
 
@@ -87,7 +89,7 @@ moon run --target native cmd/main -- _build/scenarios/draft.json examples/librar
 |---|---|
 | 主图与声明 | `pitm` 指向唯一、非零的 `iinf/infe` 声明，主图类型须为直接 `av01`；计数与实际条目一致，拒绝重复 ID |
 | 属性引用 | 所有 `ipma` 的 item 必须已声明，每个表内 ID 递增且跨表唯一；同版本/flags 表不得重复；所有非零属性索引须落在 `ipco` 中，包括次要 item 的索引 |
-| 主图属性 | 主图须关联唯一 `ispe` 和 `av1C`；检查正尺寸、配置头和位深标志；如果关联了 `pixi`，其通道数与各通道位深须与 `av1C` 一致。尺寸是存储画布尺寸，不应用旋转或裁剪属性 |
+| 主图属性 | 主图须关联唯一 `ispe` 和 `av1C`；检查正尺寸、配置头和位深标志；如果关联了 `pixi`，其通道数与各通道位深须与 `av1C` 一致。保留主图属性的索引、fourcc、属性盒偏移及 essential 标志；未知或未实现且标记为 essential 的主图属性返回 `UNSUPPORTED_ESSENTIAL_PROPERTY`，不再给出子集成功结果。属性索引为零且 essential 为真返回 `PROPERTY_ESSENTIAL_ZERO`。尺寸是存储画布尺寸，不应用旋转或裁剪属性 |
 | 数据来源 | `iloc` 条目须引用已声明 item 且不得重复，主图须有位置；解析 base + extent offset，显式正长度区间须完整落在单个 `mdat` 载荷中，或相对当前 `meta/idat` 载荷。允许多段和跨 item 共享区间，不把共享内容误判为重叠错误 |
 | 有界读取 | 先按父盒边界检查盒长和字段宽度，再做偏移运算；扩展盒长与字段值超过有符号 Int64 范围明确返回不支持。大文件的末尾 `mdat` 载荷无需读入即可判断声明区间是否越界 |
 
@@ -99,13 +101,13 @@ inspect_avif_structure(prefix, file_size) // Result[AvifStructure, AvifDiagnosti
 inspect_avif_file(path)                  // 异步，读取并调用同一核心
 ```
 
-成功结果包含主图 ID、尺寸、声明 item 数和各数据区间的绝对偏移/长度/来源。失败返回首个诊断的 `code`、`box_type`、绝对字节 `offset`、可确定时的 `item_id` 和说明；`UNSUPPORTED_*`、`LIMIT_*` 表示超出本实现范围，不能据此断言文件违反规范。扫描入口 `scan_assets` 在 AVIF 项上使用此核心，并将诊断写入现有报告，例如 `AVIF[EXTENT_NOT_IN_MDAT] box=iloc offset=113 item=1`。旧 `avif_dimensions` 及 `init` 的尺寸草稿路径继续只提取尺寸，不提供结构验证保证。
+成功结果包含主图 ID、尺寸、声明 item 数、按关联顺序排列的 `primary_properties` 证据，以及各数据区间的绝对偏移/长度/来源。属性证据的 `interpreted` 只表示已检查对应字段子集，不表示完整属性或码流已经解释。新增公开字段意味着直接构造 `AvifStructure` 字面量的外部调用者须补该字段；只读取既有结果字段的调用方式不变。失败返回首个诊断的 `code`、`box_type`、绝对字节 `offset`、可确定时的 `item_id` 和说明；`UNSUPPORTED_*`、`LIMIT_*` 表示超出本实现范围，不能据此断言文件违反规范。扫描入口 `scan_assets` 在 AVIF 项上使用此核心，并将诊断写入现有报告，例如 `AVIF[EXTENT_NOT_IN_MDAT] box=iloc offset=113 item=1`。旧 `avif_dimensions` 及 `init` 的尺寸草稿路径继续只提取尺寸，不提供结构验证保证。
 
 **支持范围与上限：** `avif` 主品牌或兼容品牌；`meta` v0、`pitm` v0/1、`iinf` v0/1、`infe` v2/3、`ipma` v0/1 的 7/15 位属性索引、`iloc` v0/1/2 的 0/4/8 字节字段。最多读取 4 MiB 前缀、访问 4096 个盒、声明 256 个 item、处理总计各 4096 项属性关联和数据区间；只遍历固定层级的已知容器。所有必需元数据和完整顶层盒头（包括 UUID user type）必须在前缀中，末尾 `mdat` 载荷可以超出前缀；`size=0` 仅允许用于顶层末盒，不能用于嵌套盒。超限会明确拒绝，不能当作“没发现错误”。文件入口检查读取前后文件大小，不能检测同大小并发改写；调用者应提供稳定文件。
 
-**不支持或未验证：** 仅有 `avis` 的图像序列、grid/其他派生主图、外部数据源、受保护 item、construction method 2、非零 extent index、隐含/零长度数据区间；AV1 OBU 和像素解码、配置与实际码流/尺寸的一致性、颜色/旋转/裁剪语义、完整 `hdlr`/`iref`/MIAF 规则和非主图属性语义。非主图可以没有 `iloc`，但若有条目就检查其引用和数据范围；未知元数据和属性载荷只检查盒边界，不保证其语义（包括 essential 属性）。因此结构检查通过不等于图像能够解码或视觉验收通过。上层内容探测与纯结构入口均按有效 `ftyp` 边界识别兼容品牌；内容探测把 `avif`/`avis` 识别为 AVIF 家族，结构扫描仍要求 `avif` 静态图像品牌。文件格式探测通常读取前 4 KiB，较长 `ftyp` 在 4 MiB 上限内补读完整盒；截断或超限不会凭盒外字节识别为 AVIF。
+**不支持或未验证：** 仅有 `avis` 的图像序列、grid/其他派生主图、外部数据源、受保护 item、construction method 2、非零 extent index、隐含/零长度数据区间；AV1 OBU 和像素解码、配置与实际码流/尺寸的一致性、颜色/旋转/裁剪语义、完整 `hdlr`/`iref`/MIAF 规则和非主图属性语义。非主图可以没有 `iloc`，但若有条目就检查其引用和数据范围；非主图属性只校验关联和边界，不宣称已解释其载荷语义。主图未知 essential 属性会明确拒绝为 `UNSUPPORTED_ESSENTIAL_PROPERTY`；未知非 essential 属性的载荷不解释并以 `interpreted=false` 暴露。结构检查通过不等于图像能够解码或视觉验收通过。上层内容探测与纯结构入口均按有效 `ftyp` 边界识别兼容品牌；内容探测把 `avif`/`avis` 识别为 AVIF 家族，结构扫描仍要求 `avif` 静态图像品牌。文件格式探测通常读取前 4 KiB，较长 `ftyp` 在 4 MiB 上限内补读完整盒；截断或超限不会凭盒外字节识别为 AVIF。
 
-**复现行为差别：** `moon test --target native` 运行版本库中的结构夹具回归，证明若只破坏 item 声明或数据偏移，旧尺寸接口仍返回 640×360，而结构入口明确失败。合成夹具仅含不透明数据，不宣称可以解码；`moon run --target native scripts/cli_smoke.mbtx` 则使用仓库真实 `examples/formats/assets/hero.avif`，以及每次只改一个字段的三种变异，断言正常文件退出 0、变异文件退出 1，且 JSON/HTML 含精确定位诊断。跨包 `examples/library_consumer` 也消费公开结构入口。
+**复现行为差别：** `moon run --target native examples/avif_semantics` 无需清单或报告层，直接验证真实 `hero.avif` 和 8 个单约束变异/范围案例，并生成确定性 JSON 证据；其中包括旧尺寸入口仍返回 640×360、结构入口却以不同诊断拒绝的对照。`moon test --target native` 运行版本库内结构夹具回归。`moon run --target native scripts/cli_smoke.mbtx` 再通过真实素材的 CLI 端到端路径核对这些诊断是否进入清单扫描结果，且跨包 `examples/library_consumer` 消费公开接口。样例不宣称 AV1 码流可解码；完整范围事实见[本次范围与可验收核心事实](docs/core-scope.md)。
 
 ## 生态调研与复用取舍
 
@@ -113,7 +115,7 @@ inspect_avif_file(path)                  // 异步，读取并调用同一核心
 
 | 项目/组件 | 已有能力 | 与片盒点检的关系与取舍 |
 |---|---|---|
-| [Pillow](https://pillow.readthedocs.io/en/stable/handbook/tutorial.html) | 图像打开、解码、像素处理、转换与保存；支持格式和插件依安装构建环境而异 | 与本项目只在部分图片格式/尺寸信息上重叠。项目核心是外部清单驱动的整包验收；不移植 Pillow，也不把 Pillow 的解码、编辑和编码能力算作本项目能力。详见[逐项对照](docs/pillow-comparison.md) |
+| [Pillow](https://pillow.readthedocs.io/en/stable/handbook/tutorial.html) | 图像打开、解码、像素处理、转换与保存；支持格式和插件依安装构建环境而异 | 产品整包预检与 Pillow 的单图处理职责不同，但图像格式/尺寸读取有重叠。本次自有 AVIF 关系核心的范围和差异见[逐项对照](docs/pillow-comparison.md)；不移植 Pillow，也不把它的解码、编辑和编码能力算作本项目能力 |
 | [mizchi/image](https://mooncakes.io/docs/mizchi/image) | PNG/BMP/JPEG 解码与编码，以及部分格式编码、缩放；解码结果为 RGBA 像素数据 | 面向编解码和图像处理。使用它获取尺寸会进入解码路径；本项目读取交付所需的容器元数据，并为格式差异做受限解析 |
 | [gmlewis/moonbit-image](https://github.com/gmlewis/moonbit-image) | 基于 Go `image` 的简单 MoonBit 图像表示 | 面向图像数据表示；没有本项目需要的素材清单、目录验收与报告流程 |
 | [hanbings/fluorescence](https://github.com/hanbings/fluorescence) | 仓库说明了 MoonBit BMP/PNG 读取及图像模糊、取色等能力 | 覆盖部分格式与图像处理，不包含本项目的素材包验收流程；不将其描述为没有图像读取能力 |
