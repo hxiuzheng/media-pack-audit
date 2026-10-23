@@ -9,9 +9,10 @@
 - 检查发现属性绑定解析丢弃 essential 标志，真实 `hero.avif` 的主图属性即使 essential 却未被解释仍可能返回结构成功；索引为零且 essential 为真也会被忽略。现在公开结果保留主图属性索引、实际 fourcc、属性盒偏移、essential 与 `interpreted`；零索引 essential 返回 `PROPERTY_ESSENTIAL_ZERO`，未解释的主图 essential 属性返回 `UNSUPPORTED_ESSENTIAL_PROPERTY`。允许 av1C essential 位未置位，因为规范对此为建议而非强制。
 - 增加四项结构回归（7/15 位索引、未实现/未知 essential 与非 essential、零索引含/不含 essential、次要 item 零索引、真实 hero 属性映射），并增加独立公开 API 消费示例。示例不读清单或报告，使用 358-byte `hero.avif` 的原始数据及内存变异运行 9 个断言案例；`ipma` 字节 266 从 `0x04` 改为 `0x84` 后，尺寸入口仍给出 640×360，结构 API 定位返回 `ipma/266/item=1`。CLI smoke 继续验证包级报告路径。
 - 新增字段 `AvifStructure.primary_properties` 会影响外部直接构造该公开结构体字面量的调用者；生成接口已同步，README 与范围文档说明了迁移影响。只读取旧结果字段的调用者不需要修改。
-- 本地验证：Moon `0.1.20261016` / moonc `0.10.16` 的 `moon info`、`moon fmt`、项目与 `.mbtx` 两项 `moon fmt --check`、`moon check --target native --deny-warn` 均通过；脚本先按 formatter 输出修正了一处 tuple 换行。WSL 下项目和脚本格式检查、无警告类型检查、原生测试 **81/81**、独立库消费示例 **1/1**、核心示例 **9/9**、完整 CLI smoke 均通过。Windows 本机没有 MSVC/Windows SDK，未运行 Windows 原生测试。新提交对应的远端双平台 CI 尚未运行。
+- 本地验证：Moon `0.1.20261016` / moonc `0.10.16` 的 `moon info`、`moon fmt`、项目与 `.mbtx` 两项 `moon fmt --check`、`moon check --target native --deny-warn` 均通过；脚本先按 formatter 输出修正了一处 tuple 换行。WSL 下项目和脚本格式检查、无警告类型检查、原生测试 **81/81**、独立库消费示例 **1/1**、核心示例 **9/9**、完整 CLI smoke 均通过。Windows 本机没有 MSVC/Windows SDK，未运行 Windows 原生测试；该平台结果由下述同一代码提交的远端 Windows job 验证。
 - 正式申报书未修改，当前 SHA-256 仍为 `01a3c859e12eca624cc43e2a3538d83ba776a1e8b6521cc272bed99533962814`。它仍写“仅主图尺寸关联”、60 项测试、未解析图像数据位置和 Windows 未完成；仓库说明不会自动替代报名系统中的申报范围。参赛者若再次提交，须本人更新报名材料并核实相近 MoonBit 项目、源码理解和赛道事实。
-- 按用户指示，本阶段仅在本地准备，未提交或推送；确切提交的远端 CI、仓库作者身份和发布状态须待用户要求推送后再核验。
+- 用户随后授权提交和推送。代码提交 `e9eae3dfc1494f75289c188b19610c18a7fe3d70` 的作者与提交者均为 `hxiuzheng <1739840242@qq.com>`，已推送至 `https://github.com/hxiuzheng/media-pack-audit.git` 的 `main`。对应 [GitHub Actions #39962213891](https://github.com/hxiuzheng/media-pack-audit/actions/runs/39962213891) 在该 SHA 上的 Ubuntu 与 Windows jobs 均通过格式检查、无警告检查、原生测试、独立库消费示例和 CLI smoke；远端 `main` 指向该 SHA，核验时工作区干净。
+- 申报书没有修改，SHA-256 仍为 `01a3c859e12eca624cc43e2a3538d83ba776a1e8b6521cc272bed99533962814`。仓库更新不自动更新报名系统材料。
 
 ## 2026-10-21：回应第二次初审意见，明确定位并对照 Pillow
 
