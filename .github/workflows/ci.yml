@@ -25,6 +25,8 @@ jobs:
           moon fmt --check scripts/cli_smoke.mbtx
       - name: Check without warnings
         run: moon check --target native --deny-warn
+      - name: Build native target
+        run: moon build --target native --deny-warn
       - name: Test native target
         run: moon test --target native
       - name: Run independent library consumer example
@@ -52,6 +54,8 @@ jobs:
           moon fmt --check scripts/cli_smoke.mbtx
       - name: Check without warnings
         run: moon check --target native --deny-warn
+      - name: Build native target
+        run: moon build --target native --deny-warn
       - name: Test native target
         run: moon test --target native
       - name: Run independent library consumer example

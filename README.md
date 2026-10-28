@@ -190,7 +190,15 @@ Start-Process .\report\report.html
 
 ## 作为库使用
 
-核心能力由 MoonBit 库提供，CLI 是它的薄消费端。当前复用验证使用仓库内独立包；Mooncakes 发布及从注册表安装的验证安排在验收阶段，尚不作为已完成的复用证据。
+核心能力由 MoonBit 库提供，CLI 是它的薄消费端。仓库内独立消费示例使用当前检出的模块，验证公开 API 调用路径；这与从 Mooncakes 注册表安装是两项不同的验证。
+
+发布到 Mooncakes 后，在独立 MoonBit 项目根目录安装指定版本：
+
+```sh
+moon add hxiuzheng/media-pack-audit@0.1.0
+```
+
+然后在消费包的 `moon.pkg` 中导入模块，见下方示例。此命令以该版本已发布到 Mooncakes 为前提；仓库内独立示例不能代替注册表安装验证，发布后还应在干净消费项目中执行安装和构建。
 
 仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，用清单校验一份非图像 `release-notes.txt`，调用 `scan_assets` 并将 HTML/JSON 报告写入 `_build/library-consumer/`。该样例展示通用文件规则不依赖图像解析；它验证独立包的公开 API 调用路径，不代表外部项目采用或用户反馈。仓库根目录执行：
 
