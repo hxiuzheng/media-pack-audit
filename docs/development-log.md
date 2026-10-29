@@ -2,6 +2,14 @@
 
 记录实际完成的改动和验证结果，不追记或拆分此前没有发生的工作。
 
+## 2026-10-29：完成 Mooncakes 发布与注册表消费验证
+
+- 用默认 Moon 环境运行 `moon whoami`，确认账号为 `hxiuzheng`。先发布 `hxiuzheng/media-pack-audit@0.1.0`；随后发现 README 仍把发布写成将来安排，因此更新 GitHub README 的安装/发布事实，并将仅含文档更新的包版本提升到 `0.1.1`。没有修改申报书或 AVIF 源码。
+- `moon view hxiuzheng/media-pack-audit@0.1.1 --json` 成功，确认 `0.1.1` 是最新公开版本，许可证为 Apache-2.0；`moon publish` 对 0.1.1 返回 `200 OK`。两个版本均保留在注册表。`moon publish --dry-run` 的服务端返回 `202 Accepted` 并称 dry run 完成，但本机 CLI 随后以退出码 1 输出通用失败，因此不把 dry run 记为通过；实际发布命令和版本查询分别成功。
+- 在 `%TEMP%` 的独立消费项目用无版本后缀的 `moon add hxiuzheng/media-pack-audit` 安装，`moon.mod` 锁定到 0.1.1；`moon check --target native` 退出 0，`moon run --target wasm .` 退出 0 并输出 `&lt;`。检查输出有 MoonBit 对新建主包中仅黑盒测试文件的未来兼容提醒。该临时消费包尝试 `moon run --target native .` 时因本机没有 MSVC/Windows SDK 而失败，未称为通过；仓库同一 GitHub 提交的 CI 已覆盖 native 构建和测试。
+- GitHub 提交 [`dcb39e6`](https://github.com/hxiuzheng/media-pack-audit/commit/dcb39e63959e39f73bf8afca907eda3a9110301d) 由仓库创建者账号普通推送；[Actions #40813056082](https://github.com/hxiuzheng/media-pack-audit/actions/runs/40813056082) 的 Ubuntu 与 Windows jobs 均通过格式检查、无警告检查、native 构建、原生测试、独立库消费示例和 CLI smoke。README 与版本更新后本地 `moon check --target native --deny-warn`、`moon package --list` 通过。
+- 本机 `moon info` 曾把生成接口中的 `Int32` 显示改成 `Int`；确认是工具链生成差异后已恢复 `pkg.generated.mbti`，未纳入提交。注册表安装时符号包下载出现一次超时提醒，但 registry index 更新、包依赖解析、类型检查与 Wasm 运行随后成功。
+
 ## 2026-10-24 02:22 阶段：补充相邻 MoonBit 文件包项目对照
 
 - 复核起点为 `9238c3eb171941f72f39b6224bcc76b00ea0ee8f`，`main` 与 `origin/main` 一致且工作区干净；该 SHA 的 Ubuntu/Windows CI 已通过。重新按 Mooncakes 当前条目及其公开 README 核对 [MoonBit Notary](https://mooncakes.io/docs/hcjbat/moonbit-notary)：页面列出 v0.1.0、Apache-2.0，文档描述电子证据清单、目录扫描/分类、路径与摘要规则、重复材料、批处理、审计记录和报告。
