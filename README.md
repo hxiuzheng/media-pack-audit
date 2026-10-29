@@ -22,7 +22,7 @@
 
 十月还适配了 MoonBit `0.1.20261012` 的类型与接口写法；这属于工具链维护。直接构造 `AssetSpec` 的旧调用者须把必填的 `width`/`height` 改为 `Some(宽)`/`Some(高)`，或同时使用 `None`；旧 JSON 清单中成对的整数尺寸仍可使用。当前公开字段及函数签名见 `pkg.generated.mbti`。
 
-新生态项目建设方向的提交截止为 **2026-10-31**；Mooncakes 发布安排在后续验收阶段，当前仓库不将元数据或可调用示例视为已经发布。提交版本仍需参赛者本人完成源码、限制及公开声明的复核；自动测试与 CI 记录不能替代该复核。
+新生态项目建设方向的提交截止为 **2026-10-31**；本模块已在 Mooncakes 公开发布，当前发布版本和注册表安装复现见[作为库使用](#作为库使用)。提交版本仍需参赛者本人完成源码、限制及公开声明的复核；自动测试与 CI 记录不能替代该复核。
 
 ## 为什么做它
 
@@ -190,15 +190,16 @@ Start-Process .\report\report.html
 
 ## 作为库使用
 
-核心能力由 MoonBit 库提供，CLI 是它的薄消费端。仓库内独立消费示例使用当前检出的模块，验证公开 API 调用路径；这与从 Mooncakes 注册表安装是两项不同的验证。
+核心能力由 MoonBit 库提供，CLI 是它的薄消费端。仓库内独立消费示例使用当前检出的模块，验证公开 API 调用路径；Mooncakes 的公开发布和注册表安装另行验证。`hxiuzheng/media-pack-audit@0.1.0` 已于 2026-10-29 发布，并在干净消费项目中完成安装与运行验证。
 
-发布到 Mooncakes 后，在独立 MoonBit 项目根目录安装指定版本：
+在独立 MoonBit 项目根目录安装 Mooncakes 当前最新版本，或按需固定版本：
 
 ```sh
-moon add hxiuzheng/media-pack-audit@0.1.0
+moon add hxiuzheng/media-pack-audit
+# 固定到已验证版本时：moon add hxiuzheng/media-pack-audit@0.1.0
 ```
 
-然后在消费包的 `moon.pkg` 中导入模块，见下方示例。此命令以该版本已发布到 Mooncakes 为前提；仓库内独立示例不能代替注册表安装验证，发布后还应在干净消费项目中执行安装和构建。
+然后在消费包的 `moon.pkg` 中导入模块，见下方示例。2026-10-29 的干净消费验证使用固定版本 `0.1.0`：`moon add` 成功，`moon check --target native` 通过，`moon run --target wasm .` 成功调用公开 API 并输出 `&lt;`。Windows 本机缺少 MSVC，因此该临时消费包的 native 执行未通过；项目 native 检查和测试由仓库 CI 覆盖。
 
 仓库附有独立 MoonBit 包作为消费端示例：[`examples/library_consumer`](examples/library_consumer)。它导入本模块，用清单校验一份非图像 `release-notes.txt`，调用 `scan_assets` 并将 HTML/JSON 报告写入 `_build/library-consumer/`。该样例展示通用文件规则不依赖图像解析；它验证独立包的公开 API 调用路径，不代表外部项目采用或用户反馈。仓库根目录执行：
 
